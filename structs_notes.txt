@@ -1,0 +1,21 @@
+
+
+Current data structure type we are designing the algorithm around. Starting with what the professr put up in class.
+
+
+typedef struct literal{
+	//Variable read from file
+	int id;
+	//Is positive if true 
+	int is_pos;
+}literal;
+
+typedef struct clause{
+	int len;
+	 literal *lits;
+}clause;
+
+typedef struct formula{
+	int num_clauses;
+	clause *clauses;
+}formula;
