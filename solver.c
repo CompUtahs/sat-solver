@@ -1,16 +1,10 @@
-/*
-if nvar nclause
-	1 -5 4 0 		-> 1 or ~5					-> clause -> literals[1,-5,4]  
-	AND									\>id, sign
-	-1 5 3 4 0 	-> ~1 or 5 or 3 or 4  -> clause
-		
-
-*/
-
 #include <stdlib.h>
 #include <stdio.h>
 
-
+int has_empty(formula f);
+int is_unit(clause c);
+formula unit_prop(literal l, formula f);
+formula pure_assign(literal l, formula f); 
 
 typedef struct literal{
 	//Variable read from file
@@ -31,7 +25,7 @@ typedef struct formula{
 	clause *clauses;
 }formula;
 
-formula f;
+formula f1;
 int num_lits;
 
 // a pure literal has a consistent polarity in all instances
@@ -41,15 +35,14 @@ int is_pure(int id)
 	int has_pos = 0;
   int has_neg = 0;
 
-
 	// TODO can bail early if we keep a count of appearences per literal
 	// loop through all the clause of the formula
 	int i;
 	int j;
-	for(i = 0; i < f.num_clauses; i++)
+	for(i = 0; i < f1.num_clauses; i++)
 	{
 		// loop through all the literals of each clause
-		clause temp = f.clauses[i];
+		clause temp = f1.clauses[i];
 		for(j = 0; j < temp.len; j++)
 		{
 			if(temp.lits[j].id == id)
@@ -77,13 +70,42 @@ int is_consistent()
 			if(is_con == 0)
 				return 0;
 	}
-	
 	return 1;
 }
 
+int DPLL(formula f)
+{
+	if(is_consistent(f))
+		return 1;
+	
+	if(has_empty(f))
+		return 0;
+	
+	int i;
+	for(i = 0; i < f.num_clauses; i++)
+	{
+		if(is_unit(f.clauses[i])) 
+			f = unit_prop(f.clauses[i].lits[0], f);
+	}
+	
+	//get pures
+	int pures [num_lits];
+	for(i = 1; i <= num_lits; i++)
+	{
+		if(is_pure(i))
+			pures[i] = i;
+		else
+			pures[i] = 0;
+	}
 
-
-
+	for(i = 0; i <= num_lits; i++)
+	{
+		if(pures[i])
+			f = pure_assign(i, f);
+	}
+	//choose literal
+	
+}
 
 int main(int argc, char *argv[])
 {
@@ -148,32 +170,28 @@ int main(int argc, char *argv[])
 	third.lits = ddd;
 	
 	
-	f.num_clauses = 3;
+	f1.num_clauses = 3;
 	clause all[3];
 	all[0] = first;
 	all[1] = second;
 	all[2] = third;
 	
 	num_lits = 5;
-	f.clauses = all;
+	f1.clauses = all;
 	int i,j;
-	for (j = 0; j < 3; j++){
-	for (i = 0; i < f.clauses[j].len; i++){
-		
-		printf("id %d \n is_pos %d \n", f.clauses[j].lits[i].id, f.clauses[j].lits[i].is_pos);
-	}
-	printf("\n");
-}
-	/* Base case every clause is of length 1 return true unless there is an empty clause*/
 	
-
-	/* Pure literal - all clauses it is in can  be removed from all the formula */
+	for (j = 0; j < 3; j++){
+		for (i = 0; i < f1.clauses[j].len; i++){
+			printf("id %d \n is_pos %d \n", f1.clauses[j].lits[i].id, f1.clauses[j].lits[i].is_pos);
+		}
+		printf("\n");
+	}
 	
 	int num_lits = 6;//	first.len + second.len + third.len;
 	for(i = 1; i < num_lits; i++)
+	{
 		printf("id %i is_pure %i\n", i, is_pure(i)); 
+		printf("is consistent: %i\n", is_consistent());
+	}
 
-	printf("is consistent: %i\n", is_consistent());
-		
-		
 }
