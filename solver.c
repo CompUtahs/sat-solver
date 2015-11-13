@@ -1,11 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int has_empty(formula f);
-int is_unit(clause c);
-formula unit_prop(literal l, formula f);
-formula pure_assign(literal l, formula f); 
-
 typedef struct literal{
 	//Variable read from file
 	int id;
@@ -25,6 +20,11 @@ typedef struct formula{
 	clause *clauses;
 }formula;
 
+int has_empty(formula f);
+int is_unit(clause c);
+formula unit_prop(literal l, formula f);
+formula pure_assign(literal l, formula f); 
+
 formula f1;
 int num_lits;
 
@@ -33,7 +33,7 @@ int is_pure(int id)
 {
 	int pure = 0; //boolean set to false
 	int has_pos = 0;
-  int has_neg = 0;
+  	int has_neg = 0;
 
 	// TODO can bail early if we keep a count of appearences per literal
 	// loop through all the clause of the formula
@@ -75,13 +75,14 @@ int is_consistent()
 
 int DPLL(formula f)
 {
-	if(is_consistent(f))
+	if(is_consistent(/*f*/)) //*****************
 		return 1;
 	
 	if(has_empty(f))
 		return 0;
 	
-	int i;
+	int i;                                 //************ literal?
+	
 	for(i = 0; i < f.num_clauses; i++)
 	{
 		if(is_unit(f.clauses[i])) 
@@ -101,10 +102,15 @@ int DPLL(formula f)
 	for(i = 0; i <= num_lits; i++)
 	{
 		if(pures[i])
-			f = pure_assign(i, f);
+		{
+			//f = pure_assign(i, f);       // function not implemented, only declared
+
+		}
 	}
 	//choose literal
 	
+	return 0;                     // *****strictly for compiling's sake*****	
+
 }
 
 int main(int argc, char *argv[])
@@ -126,7 +132,7 @@ int main(int argc, char *argv[])
 	literal d[3];
 	d[0] = a;
 	d[1] = b;
-  d[2] = c;
+  	d[2] = c;
 	first.lits = d;
 	
 	literal aa;
@@ -150,7 +156,7 @@ int main(int argc, char *argv[])
 	literal dd[4];
 	dd[0] = aa;
 	dd[1] = bb;
-  dd[2] = cc;
+  	dd[2] = cc;
 	dd[3] = bba;
 	second.lits = dd;
 	
