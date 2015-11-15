@@ -83,11 +83,6 @@ formula verify(int argc, char** argv, int* err)
       if(*err)
 	return *f;
       clauses[index] = curr_clause;
-      int j = 0;
-      for(;j < curr_clause.len; j++)
-	{
-	  //printf(" clause contains: %i\n", curr_clause.lits[j].id);
-	}
       index++;
     }
 
@@ -118,14 +113,6 @@ formula verify(int argc, char** argv, int* err)
   f->clauses = clauses;
   f->all_lits = all_lits;
 
-  int c_index, l_index;
-  for(c_index = 0; c_index < num_statements; c_index++)
-    {     
-      for(l_index = 0; l_index < clauses[c_index].len; c_index++)
-	{
-//printf(" clause contains: %i\n", clauses[c_index].lits[l_index].id);
-	}
-    }
   return *f;
 }
 
@@ -166,6 +153,7 @@ clause parse_clause(char* line, int num_params, int* lits_seen, int* err)
 	{
 	  val = -1 * val;
 	  lit.is_pos = 0;
+
 	}
       else
 	lit.is_pos = 1;
