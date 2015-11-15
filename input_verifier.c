@@ -83,6 +83,7 @@ formula verify(int argc, char** argv, int* err)
       if(*err)
 	return *f;
       clauses[index] = curr_clause;
+
       index++;
     }
 
@@ -207,11 +208,10 @@ main(int argc, char** argv)
   
   if(!error_val)
     {
-      printf("Maybe not an error?\n");
       print_formula(f);
       printf("num_lits: %i, num_clauses: %i.\n", f.num_lits, f.num_clauses);
     }
   else {
-    printf("Prolly an error.\n");
+    printf("ERROR!\n");
   }
 }
