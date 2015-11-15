@@ -1,5 +1,5 @@
 #ifndef DPLL_STRUCTS
-#define DLPP_STRUCTS
+#define DPLL_STRUCTS
 typedef struct literal{
 	//Variable read from file
 	int id;
