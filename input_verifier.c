@@ -66,7 +66,7 @@ formula verify(int argc, char** argv, int* err)
 	  
 	  // Verify all parts of p line were correct
 	  if(strcmp("p ", prob_start) &&
-	     strcmp("cnf ", cnf) &&        // *****************
+	     strcmp("cnf ", cnf) &&
 	     num_params >= 0 &&
 	     num_statements >= 0)
 	    {
@@ -89,7 +89,6 @@ formula verify(int argc, char** argv, int* err)
   // Verify file contents are valid CNF
   while(fgets(curr_line, sizeof(curr_line), input)) 
     {
-      //printf("Reading clause: %i --- %s\n", index, curr_line);
       clause curr_clause = parse_clause(curr_line, num_params, possible_lits, err);
       if(*err)
 	return *f;
@@ -119,11 +118,6 @@ formula verify(int argc, char** argv, int* err)
 	  lit_counts[curr_lit] = lc;
 	  curr_lit ++;
 	}
-    }
-
-  for(index = 0; index < num_params; index++)
-    {
-      printf("%i: %i\n", possible_lits[index].id, possible_lits[index].count);
     }
 
   qsort(lit_counts, num_actual_lits, sizeof(lit_count), compare_lit_count);
