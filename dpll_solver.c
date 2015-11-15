@@ -37,8 +37,51 @@ void print_lits(formula f);
 
 formula f1;
 int num_lits;
-
+int satisfiable = 0; 
 // a pure literal has a consistent polarity in all instances
+
+formula make_copy(formula f)
+{
+	
+	printf("here %d", f.num_clauses);
+	int i,j;
+	clause clauses[f.num_clauses];
+	printf("here");
+	for(i = 0;i < f.num_clauses; i++)
+	{
+		clause c;
+		literal lits[f.clauses[i].len];
+		for(j = 0; j < f.clauses[i].len; j++)
+		{
+			literal a;
+			a.id = f.clauses[i].lits[j].id;
+
+			a.is_assigned = f.clauses[i].lits[j].is_assigned;
+			a.eval = f.clauses[i].lits[j].eval;
+			a.val = f.clauses[i].lits[j].val;
+			a.is_pos = f.clauses[i].lits[j].is_pos;
+			lits[j] = a;
+
+	printf("here");
+		}
+		
+		c.lits = lits;
+
+		clauses[i] = c;
+	
+	printf("here");
+	}
+	
+	formula result;
+	result.num_clauses = f.num_clauses;
+	result.num_lits = f.num_lits;
+	result.clauses = clauses;
+	result.all_lits = f.all_lits;
+
+	printf("there");
+	return result;
+}
+
 int is_pure(int id, formula f)
 {
 	int pure = 0; //boolean set to false
@@ -132,7 +175,7 @@ formula pure_assign(literal lit, formula f)
 
 	printf("pure assign returning ^^^^^^^^^^^\n");
 
-		print_lits(f);
+		//print_lits(f);
 	return f;
 }
 
@@ -169,34 +212,60 @@ formula unit_prop(literal lit, formula f)
 			{
 				f.clauses[i].lits[j].is_assigned = 1;
 				f.clauses[i].lits[j].val = val;
-				if(f.clauses[i].lits[j].is_pos == 1 && val == 0)
-					f.clauses[i].lits[j].eval = 0;
-				else
-					f.clauses[i].lits[j].eval = 1;
+				if(val == 1)
+				{
+					if(f.clauses[i].lits[j].is_pos == 1)
+						f.clauses[i].lits[j].eval = 1;
+					else
+						f.clauses[i].lits[j].eval = 0;
 				}
+				else
+				{
+					
+					if(f.clauses[i].lits[j].is_pos == 1)
+						f.clauses[i].lits[j].eval = 0;
+					else
+						f.clauses[i].lits[j].eval = 1;
+				}
+			}
 		}
+		
 		
 	}
 	printf("unit prop returning -----------\n");
 
-		print_lits(f);
+		//print_lits(f);
 	return f;
 }
+
+/*BENBS ADDED GLOBAL OF CRAP*/
+int run_count =0;
+
 int DPLL(formula f)
 {
-	print_formula(f);
-	printf("^^^^^^^^^^ \t\t DPLL ^^^^YY");
-	
 
-	print_lits(f);
-	printf("^^^^^^^^^^ \t\t DPLL ^^^^YY");
-	if(is_consistent(f))
-		return 1;
-	
-	if(has_empty(f))
-		return 0;
-	
+	run_count ++;
+
+	print_formula(f);
+	printf("^^^^^^^^^^ \t\t DPLL ^^^^YY\n");
+
+	//int x = evaluate(f);
+	printf("dpll run count %d\n",  run_count);		
+
+
+	if (run_count ==16)
+	{
+		return satisfiable;
+	}
+
 	int i;
+
+//	if(is_consistent(f))
+//		return 1;
+	
+//	if(has_empty(f))
+//		return 0;
+/*	
 	for(i = 0; i < f.num_clauses; i++)
 	{
 
@@ -221,7 +290,7 @@ int DPLL(formula f)
 		print_lits(f);
 		}
 	}
-
+*/
 	int next_lit;
 	int all_assigned = 0;
 	for(i = 0; i < f.num_lits; i++)
@@ -233,19 +302,37 @@ int DPLL(formula f)
 			break;
 		}
 		else
+		{	
 			all_assigned = 1;
-	}	
+		}
+	}
+	
 	if(all_assigned == 1)
 		return evaluate(f);
 	
 	
-	formula branch_t = assign_val(1,next_lit,f);
-		printf("\t\t--------- branch t %d\n", f.all_lits[next_lit].id);
-		print_lits(branch_t);
-	formula branch_f = assign_val(0,next_lit,f);
-		printf("\t\t--------- branch f %d \n", f.all_lits[next_lit].id);
-		print_lits(branch_f);
-	return (DPLL(branch_t) | DPLL(branch_f));
+	formula branch_t;
+	printf(" \t\t\t\t\t\t %d\n", f.num_clauses);
+	branch_t  = f;// make_copy(f);
+	print_formula(branch_t);
+		branch_t = assign_val(1,next_lit,branch_t);
+	//	printf("\t\t--------- branch t %d\n", f.all_lits[next_lit].id);
+		//print_lits(branch_t);
+	
+	int temp = DPLL(branch_t);
+	
+	f.all_lits[next_lit].is_assigned = 0;	
+
+	formula branch_f;
+	branch_f = f; // make_copy(f);
+	branch_f  = assign_val(0,next_lit,branch_f);
+	//	printf("\t\t--------- branch f %d \n", f.all_lits[next_lit].id);
+		//print_lits(branch_f);
+	
+
+	temp += DPLL(branch_f);
+	return temp;
+//	return (DPLL(branch_t) | DPLL(branch_f));
 }
 
 formula assign_val(int val, int index, formula f)
@@ -288,20 +375,35 @@ formula assign_val(int val, int index, formula f)
 
 int evaluate(formula f)
 {
+	
+
+	printf("evaluate \n");
+	print_lits(f);
+
 	int i,j;
 	int is_true;
+	int all_true = 1;
 	for(i = 0; i < f.num_clauses; i ++)
 	{
 		is_true = 0;
 		for(j = 0; j < f.clauses[i].len; j++)
 		{
 			if(f.clauses[i].lits[j].eval == 1)
-				is_true = 1; 
+				is_true = 1;
+			 
 		}
 		if(is_true == 0)
-			return 0;
+			all_true = 0;
+
+		
 	}
-	return is_true;
+	if(all_true == 1)
+	{
+		printf("-----   \t\t\t\t TRUE \n");
+		satisfiable = 1;
+	}
+printf("returning %d from evaluate\n", all_true);
+	return all_true;
 }
 
 
@@ -336,11 +438,13 @@ void print_lits(formula f)
 	int i,j;
 	for(i = 0; i < f.num_clauses; i++)
 	{	
+		printf("clause %d  ----------------\n", i);
 		for(j = 0; j < f.clauses[i].len; j++)
 		{
 			printf("%i id\n", f.clauses[i].lits[j].id);
 			printf("\t%i is_assigned\n", f.clauses[i].lits[j].is_assigned);
 			printf("\t%i val\n",f.clauses[i].lits[j].val);
+			printf("\t%i is_pos\n",f.clauses[i].lits[j].is_pos);
 			printf("\t%i eval\n",f.clauses[i].lits[j].eval);
 		}
 	}
@@ -414,7 +518,6 @@ int main(int argc, char *argv[])
 	all[1] = second;
 	all[2] = third;
 	
-	num_lits = 5;
 	f1.clauses = all;
 	literal lits[4];
 	literal xa;
@@ -436,8 +539,73 @@ int main(int argc, char *argv[])
 	int i,j;
 
 	f1.num_lits = 5;	
-	int num_lits = 6;//	first.len + second.len + third.len;
 
-	int satisfiable = DPLL(f1);
+	literal alpha;
+	alpha.id = 1;
+	alpha.is_pos = 1;
+
+	literal beta;
+	beta.id = 2;
+	beta.is_pos = 0;
+
+	clause c1;
+	c1.len = 2;
+	literal c1lits[2];
+	c1lits[0] = alpha;
+	c1lits[1] = beta;
+	c1.lits = c1lits;
+	
+	literal alpha1;
+	alpha1.id = 1;
+	alpha1.is_pos = 1;
+
+	literal beta1;
+	beta1.id = 2;
+	beta1.is_pos = 0;
+
+	clause c11;
+	c11.len = 2;
+	literal c11lits[2];
+	c11lits[0] = alpha1;
+	c11lits[1] = beta1;
+	c11.lits = c11lits;
+
+	formula f2;
+	f2.num_lits = 2;
+	f2.num_clauses = 2;
+	clause ccs[2];
+	ccs[0] = c1;
+	ccs[1] = c11;
+	f2.clauses = ccs;
+	literal litsf[2];
+	litsf[0] = alpha;
+	litsf[1] = beta;
+	f2.all_lits = litsf;
+
+
+	literal alphaz;
+	alphaz.id = 1;
+	alphaz.is_pos = 1;
+
+
+	clause c1z;
+	c1z.len = 1;
+	literal c1litsz[1];
+	c1litsz[0] = alphaz;
+	c1z.lits = c1litsz;
+	
+
+	formula f3;
+	f3.num_lits = 1;
+	f3.num_clauses = 1;
+	clause ccsz[1];
+	ccsz[0] = c1z;
+	f3.clauses = ccsz;
+	literal litsfz[1];
+	litsfz[0] = alphaz;
+	f3.all_lits = litsfz;
+
+
+	DPLL(f2);
 	printf("\n%d\n", satisfiable);
 }
