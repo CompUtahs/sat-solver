@@ -4,7 +4,18 @@
 #include <string.h>      
 //************************
 
-clause parse_clause(char* line, int num_params, int* lits_seen, int* err);
+typedef struct lit_count {
+  int id;
+  int count;
+} lit_count;
+
+clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err);
+
+
+int compare_lit_count (const void * a, const void * b)
+{
+  return ( (*(lit_count *) b).count - (*(lit_count *) a).count);
+}
 
 /**
  * Determine that the supplied file is a valid format
@@ -70,7 +81,7 @@ formula verify(int argc, char** argv, int* err)
 	}      
     }
   
-  int possible_lits[num_params + 1];
+  lit_count possible_lits[num_params + 1];
   memset(possible_lits, 0, sizeof(possible_lits));
   clause* clauses = malloc(num_statements * sizeof(clause));
 
@@ -90,23 +101,40 @@ formula verify(int argc, char** argv, int* err)
   int num_actual_lits = 0;
 
   for(index = 0; index <= num_params; index++) 
-    {
-      if(possible_lits[index])
+    {      
+      if(possible_lits[index].count) {
 	num_actual_lits++;
+      }
     }
 
-  literal* all_lits = malloc(num_actual_lits * sizeof(literal));
+  lit_count lit_counts[num_actual_lits];
   int curr_lit = 0;
-  for(index = 0; index < num_params; index++) 
+  for(index = 0; index <= num_params ; index++) 
     {
-      if(possible_lits[index])
+      if(possible_lits[index].count)
 	{
-	  literal l;
-	  l.id = index;
-	  l.is_assigned = 0;
-	  all_lits[curr_lit] = l;
-	  curr_lit++;
+	  lit_count lc;
+	  lc.id = index;
+	  lc.count = possible_lits[index].count;
+	  lit_counts[curr_lit] = lc;
+	  curr_lit ++;
 	}
+    }
+
+  for(index = 0; index < num_params; index++)
+    {
+      printf("%i: %i\n", possible_lits[index].id, possible_lits[index].count);
+    }
+
+  qsort(lit_counts, num_actual_lits, sizeof(lit_count), compare_lit_count);
+
+  literal* all_lits = malloc(num_actual_lits * sizeof(literal));
+  for(index = 0; index < num_actual_lits; index++)
+    {
+      literal l;
+      l.id = lit_counts[index].id;
+      l.is_assigned = 0;
+      all_lits[index] = l;
     }
   
   f->num_clauses = num_statements;
@@ -117,7 +145,7 @@ formula verify(int argc, char** argv, int* err)
   return *f;
 }
 
-clause parse_clause(char* line, int num_params, int* lits_seen, int* err)
+clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
 {
   clause c;
   int lit_index;
@@ -163,7 +191,8 @@ clause parse_clause(char* line, int num_params, int* lits_seen, int* err)
       lit.is_assigned = 0;
       lit.val = 0;
       lit.eval = 0;
-      lits_seen[val]++;
+      lits_seen[val].count++;
+      lits_seen[val].id = val;
       lits[lit_index] = lit;
       token = strtok(NULL, " ");
     }
@@ -174,6 +203,8 @@ clause parse_clause(char* line, int num_params, int* lits_seen, int* err)
   return c;
 }
 
+
+/*
 void print_formula(formula current_formula)
 {
   int j,i;		
@@ -210,8 +241,15 @@ main(int argc, char** argv)
     {
       print_formula(f);
       printf("num_lits: %i, num_clauses: %i.\n", f.num_lits, f.num_clauses);
+      int i = 0;
+      for(; i < f.num_lits; i++) {
+	printf("%i ", f.all_lits[i].id);
+      }
+	  printf("\n");
     }
   else {
     printf("ERROR!\n");
   }
 }
+
+*/
