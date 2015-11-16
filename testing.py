@@ -2,7 +2,7 @@
 
 import subprocess
 
-#solver_runs = 0
+solver_runs = 0
 solver_matches = 0
 solver_mismatches = 0
 
@@ -48,14 +48,19 @@ while literals < 100:
 		else
 			print 'error in minisat ouput'
 
-		#increment clauses
+		#increment clauses and total solver runs
 		clauses = clauses + 1
+		solver_runs = solver_runs + 1
 		#********** end of  incrementing clauses
 
 	#increment literals, reset clauses
 	literals = literals + 1
 	clauses = 1;
 
-#********* end of iterativly testing dpll_solver against minisat
+
+# now that iterative testing of dpll_solver is finished, report results
+
+print 'dpll_solver matched minisat ' + (solver_matches/solver_runs) + '% of the time.' 
+#********* end of iteraivly testing dpll_solver against minisat
 
 
