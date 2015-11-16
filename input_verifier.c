@@ -41,8 +41,10 @@ formula verify(int argc, char** argv, int* err)
     *err = 1;
     return *f;
   }
-
+	printf("We got here1.\n");
   input = fopen(argv[1], "r"); // open file for reading only.
+  	printf("We got here1.\n");
+
   if (input == NULL) 
   {
     *err = 1;
@@ -51,10 +53,8 @@ formula verify(int argc, char** argv, int* err)
 
   f = malloc(sizeof(formula));
 
-  printf("We got here1.\n");
   while(fgets(curr_line, sizeof(curr_line), input)) 
     {
-    	printf("We got here2.\n");
       // Strip out comment lines beginning with 'c'
       if(curr_line[0] == 'c') 
 	{
