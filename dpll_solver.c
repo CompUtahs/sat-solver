@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #include "dpll_structs.h"
 #include "input_verifier.c"
 
@@ -85,19 +86,17 @@ int is_pure(int id, formula f)
 	int has_pos = 0;
   int has_neg = 0;
 
-	// TODO can bail early if we keep a count of appearences per literal
-	// loop through all the clause of the formula
-	int i;
-	int j;
+	int i, j;
 	for(i = 0; i < f.num_clauses; i++)
 	{
+		if (f.clauses[i].is_satisfied == 1)
+			continue;
 		// loop through all the literals of each clause
-		clause temp = f.clauses[i];
-		for(j = 0; j < temp.len; j++)
+		for(j = 0; j < f.clauses[i].len; j++)
 		{
-			if(temp.lits[j].id == id)
+			if(f.clauses[i].lits[j].id == id)
 			{
-					if(temp.lits[j].is_pos)	
+					if(f.clauses[i].lits[j].is_pos)	
 						has_pos = 1;
 					else
 						has_neg = 1;
@@ -107,9 +106,12 @@ int is_pure(int id, formula f)
 			}
 		}
 	}
-	return 1;	
+	if(has_pos)
+		return 1;	
+	else
+		return -1;
 }
-
+/*
 int is_consistent(formula f)
 {	
 	int is_con = 1;
@@ -122,22 +124,23 @@ int is_consistent(formula f)
 	}
 	return 1;
 }
-
+*/
 int has_empty(formula f)
 {
 	int i,j;
 	for(i = 0; i < f.num_clauses; i++)
 	{
-		int all_assigned = 1;	
+		int all_assigned = 1;
+		if(f.clauses[i].is_satisfied)
+			continue;
+
 		for(j = 0; j< f.clauses[i].len; j++)
 		{
-	//		if(f.clauses[i].is_satisfied)
-	//			continue;
-
-			if(!(f.clauses[i].lits[j].is_assigned
-				&& f.clauses[i].lits[j].eval == 0))
+			if (!(f.clauses[i].lits[j].is_assigned))
+			{
 				all_assigned = 0;
-					
+				break;
+			}
 		}
 		if(all_assigned == 1)
 			return 1;
@@ -147,13 +150,32 @@ int has_empty(formula f)
 
 formula pure_assign(literal lit, formula f)
 {
+	int i;
 	int val;
 	if(lit.is_pos == 1)
 		val = 1;
 	else
 		val = 0;
 
-	int i,j;
+	for(i = 0; i < f.num_lits; i++)
+	{
+		if(f.all_lits[i].id == lit.id)
+		{
+			break;
+		}
+	}	
+	assert(i != (f.num_lits +1));
+	f = assign_val(val, i, f);
+	return f;
+}
+
+/*
+	int val;
+	if(lit.is_pos == 1)
+		val = 1;
+	else
+		val = 0;
+
 	for(i = 0; i < f.num_clauses; i++)
 	{
 		for(j = 0; j < f.clauses[i].len; j++)
@@ -176,7 +198,7 @@ formula pure_assign(literal lit, formula f)
 		//print_lits(f);
 	return f;
 }
-
+*/
 int is_unit_clause(clause c)
 {
 	if(c.is_satisfied)
@@ -262,8 +284,8 @@ int DPLL(formula f)
 //	if(is_consistent(f))
 //		return 1;
 	
-//	if(has_empty(f))
-//		return 0;
+	if(has_empty(f))
+		return 0;
 	
 	for(i = 0; i < f.num_clauses; i++)
 	{
@@ -277,24 +299,34 @@ int DPLL(formula f)
 			printf("Back in Main after unit prop\n");
 			i = 0;
 		}
+		if(has_empty(f))
+			return 0;
+
 	}
 	if (evaluate(f))
-		return 1;
-/*
+		return 11;
+
 	//get pures
 	for(i = 0; i < f.num_lits; i++)
 	{
-		if(is_pure(f.all_lits[i].id, f))
-		{
-			
+		if (f.all_lits[i].is_assigned == 1)
+			continue;
+		int check = is_pure(f.all_lits[i].id, f);
+
+		if(check)
+		{	
+			if (check > 0)
+				f.all_lits[i].is_pos = 1;
+			else
+				f.all_lits[i].is_pos = 0;
 			f = pure_assign(f.all_lits[i], f);
+			printf("Back in Main after unit pure assign\n");
+		}
+		if (evaluate(f))
+			return 7;
+	}
 	
 
-			printf("Back in Main after unit pure assign\n");
-		print_lits(f);
-		}
-	}
-*/
 	int next_lit;
 	int all_assigned = 0;
 	
@@ -345,19 +377,6 @@ int DPLL(formula f)
 		}	
 
 	}
-/*
-	for(i = 0; i < f.num_clauses; i++)
-	{
-		printf("unassigning lits inside of clases\n");
-		f.clauses[i].is_satisfied = 0;
-		for(j = 0; j < f.clauses[i].len; j++)
-		{
-			
-			f.clauses[i].lits[j].is_assigned = 0;
-		}
-	
-	}
-*/
 	printf("Unassigned formula\n");
 	print_formula(f);	
 	// branch false
@@ -412,36 +431,6 @@ int evaluate(formula f)
 	return 1;
 
 }	
-/*TODO simply for clauses
-	print_formula(f);
-
-	int i,j;
-
-
-	int is_true;
-	int all_true = 1;
-	for(i = 0; i < f.num_clauses; i ++)
-	{
-		is_true = 0;
-		
-		for(j = 0; j < f.clauses[i].len; j++)
-		{
-			if(f.clauses[i].lits[j].eval == 1)
-				is_true = 1;
-			 
-		}
-		if(is_true == 0)
-			all_true = 0;
-	}
-	if(all_true == 1)
-	{
-		printf("-----   \t\t\t\t TRUE \n");
-		satisfiable = 1;
-	}
-printf("returning %d from evaluate\n", all_true);
-	return all_true;
-}
-*/
 
 void print_formula(formula current_formula)
 {
@@ -512,5 +501,9 @@ int main(int argc, char *argv[])
 	print_lits(f9);
 	for(i = 0; i< f9.num_lits; i++)
 	printf("%d is ass %d is pos  %d id\n", f9.all_lits[i].is_assigned, 	f9.all_lits[i].is_pos, f9.all_lits[i].id);
-	printf("\n%d\n", DPLL(f9));
+	if(DPLL(f9))
+		printf("SATISFIABLE");
+	else
+		printf("UNSATISFIABLE");
+
 }
