@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "DPLL_STRUCTS.H"
-#include "INPUT_VERIFIER.C"
+#include "dpll_structs.h"
+#include "input_verifier.c"
 
 /*
 typedef struct literal{
