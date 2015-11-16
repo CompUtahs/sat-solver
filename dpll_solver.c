@@ -3,30 +3,6 @@
 #include "dpll_structs.h"
 #include "input_verifier.c"
 
-/*
-typedef struct literal{
-	//Variable read from file
-	int id;
-	//Is positive if true 
-	int is_pos;
-	int is_assigned;
-	int val;
-	int eval;
-}literal;
-
-typedef struct clause{
-	int len;
-	literal *lits;
-	int is_satisfied;
-}clause;
-
-typedef struct formula{
-	int num_clauses;
-	clause *clauses;
-	int num_lits;
-	literal *all_lits;
-}formula;
-*/
 
 formula assign_val(int val, int index, formula f);
 int has_empty(formula f);
@@ -299,9 +275,11 @@ int DPLL(formula f)
 		
 			print_formula(f);
 			printf("Back in Main after unit prop\n");
-		//	i = 0;
+			i = 0;
 		}
 	}
+	if (evaluate(f))
+		return 1;
 /*
 	//get pures
 	for(i = 0; i < f.num_lits; i++)
@@ -424,16 +402,28 @@ formula assign_val(int val, int index, formula f)
 
 int evaluate(formula f)
 {
-	
-//TODO simply for clauses
+	int i;
+
+	for(i = 0; i < f.num_clauses; i ++)
+	{	
+		if (!(f.clauses[i].is_satisfied == 1))
+				return 0;
+	}	
+	return 1;
+
+}	
+/*TODO simply for clauses
 	print_formula(f);
 
 	int i,j;
+
+
 	int is_true;
 	int all_true = 1;
 	for(i = 0; i < f.num_clauses; i ++)
 	{
 		is_true = 0;
+		
 		for(j = 0; j < f.clauses[i].len; j++)
 		{
 			if(f.clauses[i].lits[j].eval == 1)
@@ -442,8 +432,6 @@ int evaluate(formula f)
 		}
 		if(is_true == 0)
 			all_true = 0;
-
-		
 	}
 	if(all_true == 1)
 	{
@@ -453,7 +441,7 @@ int evaluate(formula f)
 printf("returning %d from evaluate\n", all_true);
 	return all_true;
 }
-
+*/
 
 void print_formula(formula current_formula)
 {
@@ -491,32 +479,8 @@ void print_formula(formula current_formula)
 	}
 
 
-/*
-	for (j = 0; j < current_formula.num_clauses; j++){
-		
-		for (i = 0; i < current_formula.clauses[j].len; i++){
-			// print all literals in a clause
-			if(!current_formula.clauses[j].lits[i].is_pos)
-				printf("-");
-			
-			printf("%d", current_formula.clauses[j].lits[i].id);
-			if(current_formula.clauses[j].lits[i].is_assigned)
-			{
-				if(current_formula.clauses[j].lits[i].eval == 1)
-					printf("T");
-				else
-					printf("F");
-			}
-			else
-				printf("u");
-					
-			printf(" ");
-		}
-		printf("\n");
-	}
-*/
 }
-
+/* Debugging prints*/
 void print_lits(formula f)
 {
 	int i,j;
@@ -533,163 +497,11 @@ void print_lits(formula f)
 		}
 	}
 }
+
+
 int main(int argc, char *argv[])
 {
-	literal a;
-	a.id = 1;
-	a.is_pos = 1;
-	
-	literal b;
-	b.id = 5;
-	b.is_pos = 1;
-	
-	literal c;
-	c.id = 4;
-	c.is_pos = 0;
-
-	clause first;
-	first.len = 3;
-	literal d[3];
-	d[0] = a;
-	d[1] = b;
-  d[2] = c;
-	first.lits = d;
-	
-	literal aa;
-	aa.id = 1;
-	aa.is_pos = 0;
-	
-	literal bb;
-	bb.id = 5;
-	bb.is_pos = 0;
-	
-	literal cc;
-	cc.id = 3;
-	cc.is_pos = 0;
-
-	literal bba;
-	bba.id = 4;
-	bba.is_pos = 0;
-	
-	clause second;
-	second.len = 4;
-	literal dd[4];
-	dd[0] = aa;
-	dd[1] = bb;
-  dd[2] = cc;
-	dd[3] = bba;
-	second.lits = dd;
-	
-	literal aaa;
-	aaa.id = 3;
-	aaa.is_pos = 1;
-	
-	literal bbb;
-	bbb.id = 4;
-	bbb.is_pos = 1;
-	
-	clause third;
-	third.len = 2;
-	literal ddd[2];
-	ddd[0] = aaa;
-	ddd[1] = bbb;
-	third.lits = ddd;
-	
-	
-	f1.num_clauses = 3;
-	clause all[3];
-	all[0] = first;
-	all[1] = second;
-	all[2] = third;
-	
-	f1.clauses = all;
-	literal lits[4];
-	literal xa;
-	xa.id = 1;
-	lits[0] = xa;;
-	
-	literal xb;
-	xb.id = 3;
-	lits[1] = xb;
-		
-	literal xc;
-	xc.id = 4;
-	lits[2] = xc;
-	
-	literal xd;
-	xd.id = 5;
-	lits[3] = xd;
-	f1.all_lits = lits;
-	int i,j;
-
-	f1.num_lits = 4;	
-
-	literal alpha;
-	alpha.id = 1;
-	alpha.is_pos = 1;
-
-	literal beta;
-	beta.id = 2;
-	beta.is_pos = 0;
-
-	clause c1;
-	c1.len = 2;
-	literal c1lits[2];
-	c1lits[0] = alpha;
-	c1lits[1] = beta;
-	c1.lits = c1lits;
-	
-	literal alpha1;
-	alpha1.id = 1;
-	alpha1.is_pos = 1;
-
-	literal beta1;
-	beta1.id = 2;
-	beta1.is_pos = 1;
-
-	clause c11;
-	c11.len = 2;
-	literal c11lits[2];
-	c11lits[0] = alpha1;
-	c11lits[1] = beta1;
-	c11.lits = c11lits;
-
-	formula f2;
-	f2.num_lits = 2;
-	f2.num_clauses = 2;
-	clause ccs[2];
-	ccs[0] = c1;
-	ccs[1] = c11;
-	f2.clauses = ccs;
-	literal litsf[2];
-	litsf[0] = alpha;
-	litsf[1] = beta;
-	f2.all_lits = litsf;
-
-
-	literal alphaz;
-	alphaz.id = 1;
-	alphaz.is_pos = 1;
-
-
-	clause c1z;
-	c1z.len = 1;
-	literal c1litsz[1];
-	c1litsz[0] = alphaz;
-	c1z.lits = c1litsz;
-	
-
-	formula f3;
-	f3.num_lits = 1;
-	f3.num_clauses = 1;
-	clause ccsz[1];
-	ccsz[0] = c1z;
-	f3.clauses = ccsz;
-	literal litsfz[1];
-	litsfz[0] = alphaz;
-	f3.all_lits = litsfz;
-
-	
+	int i;	
 	int err_val = 0;
 	formula f9 = verify(argc,argv,&err_val);
 	if(err_val != 0)
@@ -699,7 +511,6 @@ int main(int argc, char *argv[])
 	print_formula(f9);
 	print_lits(f9);
 	for(i = 0; i< f9.num_lits; i++)
-		printf("%d is ass %d is pos  %d id\n", f9.all_lits[i].is_assigned, 	f9.all_lits[i].is_pos, f9.all_lits[i].id);
-	DPLL(f9);
-	printf("\n%d\n", satisfiable);
+	printf("%d is ass %d is pos  %d id\n", f9.all_lits[i].is_assigned, 	f9.all_lits[i].is_pos, f9.all_lits[i].id);
+	printf("\n%d\n", DPLL(f9));
 }
