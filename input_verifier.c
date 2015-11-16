@@ -51,9 +51,11 @@ formula verify(int argc, char** argv, int* err)
 
   f = malloc(sizeof(formula));
 
+  printf("We got here1.\n");
   while(fgets(curr_line, sizeof(curr_line), input)) 
     {
-      // Stript out comment lines beginning with 'c'
+    	printf("We got here2.\n");
+      // Strip out comment lines beginning with 'c'
       if(curr_line[0] == 'c') 
 	{
 	  continue;
