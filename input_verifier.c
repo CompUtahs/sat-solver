@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include "dpll_structs.h"
 #include <string.h>      
-//************************
 
+/**
+ * lit_count allows literals to be tracked by frequency, for future sorting 
+ **/
 typedef struct lit_count {
   int id;
   int count;
@@ -11,29 +13,29 @@ typedef struct lit_count {
 
 clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err);
 
-
+/**
+ * lit_count comparer - to sort lit_counts in descending order
+ **/
 int compare_lit_count (const void * a, const void * b)
 {
   return ( (*(lit_count *) b).count - (*(lit_count *) a).count);
 }
 
 /**
- * Determine that the supplied file is a valid format
+ * Parse the supplied input file into a formula struct
  *
- * Returns 0 if valid, and 1 otherwise
+ * 
  **/
 formula verify(int argc, char** argv, int* err)
 {
   FILE* input;
   char curr_line[65536];
-  int problem_is_defined = 0;
   int num_params = 0;
   int num_statements = 0;
   long statements_read = 0;
-  //char* prob_start, cnf;      // if you do it this way, I'm pretty sure the only way to avoid the seg fault is by malloc-ing later
-  char prob_start[2];         //  I think you meant to place the "p", here right? --> should only ever hold a single char
-  char cnf[4];                // should (indeed it will!) always be "cnf".
-  formula* f;                            // both these arrays need an extra space to account for the trailing space in the input line from file
+  char prob_start[2];
+  char cnf[4];
+  formula* f;
   if(argc != 2) 
   {
     *err = 1;
@@ -51,14 +53,15 @@ formula verify(int argc, char** argv, int* err)
 
   while(fgets(curr_line, sizeof(curr_line), input)) 
     {
+      // Stript out comment lines beginning with 'c'
       if(curr_line[0] == 'c') 
 	{
 	  continue;
 	}    
-      // Parse line starting with 'p'
+      // Parse problem definition line starting with 'p'
       else if(curr_line[0] == 'p')
 	{
-	  sscanf(curr_line, "%s %s %i %i", // works now 
+	  sscanf(curr_line, "%s %s %i %i",
 	         prob_start,             
 		 cnf,                 
 		 &num_params,
@@ -67,10 +70,9 @@ formula verify(int argc, char** argv, int* err)
 	  // Verify all parts of p line were correct
 	  if(strcmp("p ", prob_start) &&
 	     strcmp("cnf ", cnf) &&
-	     num_params >= 0 &&
-	     num_statements >= 0)
+	     num_params > 0 &&
+	     num_statements > 0)
 	    {
-	      problem_is_defined = 1;
 	      break;
 	    }
 	  else
@@ -80,9 +82,12 @@ formula verify(int argc, char** argv, int* err)
 	    }
 	}      
     }
-  
+
+  // Use array 'possible_lits' to track frequency of appearance of literals
   lit_count possible_lits[num_params + 1];
   memset(possible_lits, 0, sizeof(possible_lits));
+  
+  // Secure memory for the array of clauses
   clause* clauses = malloc(num_statements * sizeof(clause));
 
   int index = 0;
@@ -97,8 +102,9 @@ formula verify(int argc, char** argv, int* err)
       index++;
     }
 
+  // Determine how many literals appeared during parsing
   int num_actual_lits = 0;
-
+  
   for(index = 0; index <= num_params; index++) 
     {      
       if(possible_lits[index].count) {
@@ -106,6 +112,7 @@ formula verify(int argc, char** argv, int* err)
       }
     }
 
+  // Strip out literals that COULD have appeared in clauses, but did not.
   lit_count lit_counts[num_actual_lits];
   int curr_lit = 0;
   for(index = 0; index <= num_params ; index++) 
@@ -119,9 +126,11 @@ formula verify(int argc, char** argv, int* err)
 	  curr_lit ++;
 	}
     }
-
+  
+  // Sort the literals from most frequent to least frequently seen, to optimize solution
   qsort(lit_counts, num_actual_lits, sizeof(lit_count), compare_lit_count);
 
+  // Convert the lit_counts to literal structs for the formula to use
   literal* all_lits = malloc(num_actual_lits * sizeof(literal));
   for(index = 0; index < num_actual_lits; index++)
     {
@@ -139,6 +148,10 @@ formula verify(int argc, char** argv, int* err)
   return *f;
 }
 
+/**
+ * Parse the provided line into a clause struct
+ * Also tracks occurences of literals in the clause
+ **/
 clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
 {
   clause c;
@@ -165,6 +178,7 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
     {            
       literal lit;
       char* lastChar;
+      // atoi can be used in this instance, because 0 should never be parsed
       int val = atoi(token);
       // Determine if an error occured while parsing the string
       if(val == 0) {
@@ -176,7 +190,6 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
 	{
 	  val = -1 * val;
 	  lit.is_pos = 0;
-
 	}
       else
 	lit.is_pos = 1;
@@ -196,54 +209,3 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
   c.is_satisfied = 0;
   return c;
 }
-
-
-/*
-void print_formula(formula current_formula)
-{
-  int j,i;		
-  for (j = 0; j < current_formula.num_clauses; j++){
-		
-    for (i = 0; i < current_formula.clauses[j].len; i++){
-      // print all literals in a clause
-      if(!current_formula.clauses[j].lits[i].is_pos)
-	printf("-");
-			
-      printf("%d", current_formula.clauses[j].lits[i].id);
-      if(current_formula.clauses[j].lits[i].is_assigned)
-	{
-	  if(current_formula.clauses[j].lits[i].eval == 1)
-	    printf("T");
-	  else
-	    printf("F");
-	}
-      else
-	printf("u");
-					
-      printf(" ");
-    }
-    printf("\n");
-  }
-}
-
-main(int argc, char** argv)
-{
-  int error_val = 0;
-  formula f = verify(argc, argv, &error_val);
-  
-  if(!error_val)
-    {
-      print_formula(f);
-      printf("num_lits: %i, num_clauses: %i.\n", f.num_lits, f.num_clauses);
-      int i = 0;
-      for(; i < f.num_lits; i++) {
-	printf("%i ", f.all_lits[i].id);
-      }
-	  printf("\n");
-    }
-  else {
-    printf("ERROR!\n");
-  }
-}
-
-*/
