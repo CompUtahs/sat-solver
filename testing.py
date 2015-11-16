@@ -22,13 +22,13 @@ while literals < 100:
 	# always end on ten more clauses than literals
 	while clauses < (literals + 10):
 		# make random dimacs file
-		suprocess.call(['./r_dimacs_gen', literals, clauses, seed])  # do I need to convert args to strings here??
+		subprocess.call(['./r_dimacs_gen', str(literals), str(clauses), str(seed)])  
 	
 		# capture minisat output
 		minisat_out = subprocess.check_output(['minisat', '-verb=0', 'random_dimacs.txt'])
 
 		#capture dpll_solver output
-		dpll_solver_out = subprocess.check_output(['./dpll_solver', literals, clauses, seed])
+		dpll_solver_out = subprocess.check_output(['./dpll_solver', str(literals), str(clauses), str(seed)])
 
 		#compare the endings of both captured outputs
 		if minisat_out.endswith('SATISFIABLE'):
@@ -36,16 +36,16 @@ while literals < 100:
 				solver_matches = solver_matches + 1
 			elif dpll_solver_out.endswith('UNSATISFIABLE'): # if minisat and dpll_solver do not match
 				solver_mismatches = solver_mismatches + 1
-			else
+			else:
 				print 'error in dppl_solver output'
 		elif minisat_out.endswith('UNSATISFIABLE'):
 			if dpll_solver_out.endswith('UNSATISFIABLE'): # if minisat and dpll_solver match as unsatisfiable
 				solver_matches = solver_matches + 1
 			elif dpll_solver_out.endswith('SATISFIABLE'): # if minisat and dpll_solver do not match
 				solver_mismatches = solver_mismatches + 1
-			else	
+			else:	
 				print 'error in dppl_solver output'
-		else
+		else:
 			print 'error in minisat ouput'
 
 		#increment clauses and total solver runs
@@ -60,7 +60,7 @@ while literals < 100:
 
 # now that iterative testing of dpll_solver is finished, report results
 
-print 'dpll_solver matched minisat ' + (solver_matches/solver_runs) + '% of the time.' 
+print 'dpll_solver matched minisat ' + str((solver_matches/solver_runs)) + '% of the time.' 
 #********* end of iteraivly testing dpll_solver against minisat
 
 
