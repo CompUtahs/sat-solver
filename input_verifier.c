@@ -41,10 +41,8 @@ formula verify(int argc, char** argv, int* err)
     *err = 1;
     return *f;
   }
-	printf("We got here1.\n");
   input = fopen(argv[1], "r"); // open file for reading only.
-  	printf("We got here1.\n");
-
+  
   if (input == NULL) 
   {
     *err = 1;
