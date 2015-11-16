@@ -17,7 +17,6 @@ void print_lits(formula f);
 formula f1;
 int num_lits;
 int satisfiable = 0; 
-// a pure literal has a consistent polarity in all instances
 
 int get_eval(val, is_pos)
 {
@@ -38,51 +37,9 @@ int get_eval(val, is_pos)
 		}
 		return eval;
 }
-formula make_copy(formula f)
-{
-	
-	printf("here %d", f.num_clauses);
-	int i,j;
-	clause clauses[f.num_clauses];
-	printf("here");
-	for(i = 0;i < f.num_clauses; i++)
-	{
-		clause c;
-		literal lits[f.clauses[i].len];
-		for(j = 0; j < f.clauses[i].len; j++)
-		{
-			literal a;
-			a.id = f.clauses[i].lits[j].id;
-
-			a.is_assigned = f.clauses[i].lits[j].is_assigned;
-			a.eval = f.clauses[i].lits[j].eval;
-			a.val = f.clauses[i].lits[j].val;
-			a.is_pos = f.clauses[i].lits[j].is_pos;
-			lits[j] = a;
-
-	printf("here");
-		}
-		
-		c.lits = lits;
-
-		clauses[i] = c;
-	
-	printf("here");
-	}
-	
-	formula result;
-	result.num_clauses = f.num_clauses;
-	result.num_lits = f.num_lits;
-	result.clauses = clauses;
-	result.all_lits = f.all_lits;
-
-	printf("there");
-	return result;
-}
 
 int is_pure(int id, formula f)
 {
-	int pure = 0; //boolean set to false
 	int has_pos = 0;
   int has_neg = 0;
 
@@ -175,10 +132,10 @@ int is_unit_clause(clause c)
 {
 	if(c.is_satisfied)
 	{
-printf("c is satisfied\n");
+//printf("c is satisfied\n");
 		return 0;
 	}
-printf("c is unsatified\n");
+//printf("c is unsatified\n");
 	
 	int i;
 	int unassigned_count = 0;
@@ -190,9 +147,6 @@ printf("c is unsatified\n");
 		
 		if(unassigned_count > 1)
 		  return 0; 
-
-
-printf("c's unassigned count %d\n", unassigned_count);
 	}
 	
 	if(unassigned_count == 1)
@@ -200,26 +154,22 @@ printf("c's unassigned count %d\n", unassigned_count);
 	else
 		return 0;
 }
+
 formula unit_prop(clause c, formula f)
 {
 
-	int k;
+	int i,k,val,index;
 	for(k = 0; k < c.len; k++)
 	{
 		if(c.lits[k].is_assigned == 0)
 			break;
 	}
 
-printf("%d id\t %d is pos\n", c.lits[k].id, c.lits[k].is_pos);
-
-
-	int val;
 	if(c.lits[k].is_pos == 1)
 		val = 1;
 	else
 		val = 0;
 
-	int index,i;
 	for(i = 0; i < f.num_lits; i++)
 	{
 		if(f.all_lits[i].id == c.lits[k].id)
@@ -230,53 +180,49 @@ printf("%d id\t %d is pos\n", c.lits[k].id, c.lits[k].is_pos);
 	}
 
 	f = assign_val(val, index, f);
-	printf("unit prop returning -----------\n");
+//printf("unit prop returning -----------\n");
 
 	return f;
 
 }
 
-/*BENBS ADDED GLOBAL OF CRAP*/
-int run_count =0;
+//int run_count =0;
 
 int DPLL(formula f)
 {
 
-	run_count ++;
+//run_count ++;
 
 
-	//int x = evaluate(f);
-	printf("\n\nDPLL run count %d\n",  run_count);		
-
-	print_formula(f);
+//printf("\n\nDPLL run count %d\n",  run_count);		
+//print_formula(f);
 
 
-	int i,j;
-
+	int i, j, next_lit, all_assigned = 0;
+	//check if the remaining variables are consistent	
 	if(is_consistent(f))
-		return 13;
-	
+		return 1;
+
+	//check for an unsatisfiable clause aka an empty clause
 	if(has_empty(f))
 		return 0;
-	
+
+	//unit prop	
 	for(i = 0; i < f.num_clauses; i++)
 	{
 
 		if(is_unit_clause(f.clauses[i]))
 		{
-				
 			f = unit_prop(f.clauses[i], f);
-		
-			print_formula(f);
-			printf("Back in Main after unit prop\n");
 			i = 0;
+//print_formula(f);
+//printf("Back in Main after unit prop\n");
 		}
 		if(has_empty(f))
 			return 0;
-
 	}
 	if (evaluate(f))
-		return 11;
+		return 1;
 
 	//get pures
 	for(i = 0; i < f.num_lits; i++)
@@ -284,27 +230,24 @@ int DPLL(formula f)
 		if (f.all_lits[i].is_assigned == 1)
 			continue;
 		int check = is_pure(f.all_lits[i].id, f);
-
 		if(check)
 		{	
 			if (check > 0)
 				f.all_lits[i].is_pos = 1;
 			else
 				f.all_lits[i].is_pos = 0;
+
 			f = pure_assign(f.all_lits[i], f);
-			printf("Back in Main after unit pure assign\n");
+//printf("Back in Main after unit pure assign\n");
 		}
 		if (evaluate(f))
-			return 7;
+			return 1;
 	}
-	
 
-	int next_lit;
-	int all_assigned = 0;
-	
+	//choose next literal
 	for(i = 0; i < f.num_lits; i++)
 	{
-		printf("%d is assigned: %d\n",f.all_lits[i].id,f.all_lits[i].is_assigned);
+//printf("%d is assigned: %d\n",f.all_lits[i].id,f.all_lits[i].is_assigned);
 		if(!(f.all_lits[i].is_assigned))
 		{
 			next_lit = i;
@@ -322,17 +265,18 @@ int DPLL(formula f)
 	
 	
 	
-	int run_stamp = run_count;
+//	int run_stamp = run_count;
 	
 	//branch true
 	formula branch_t = f;	
 	branch_t = assign_val(1,next_lit,branch_t);
-	printf("calling t_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
-	int temp = DPLL(branch_t);
-
-	printf("returned from t_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
+//printf("calling t_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
+//printf("returned from t_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
 	
+	int result = DPLL(branch_t);
 	int id;
+
+	//unassign variables from the other branch below this next lit -- this is our backtracking
 	for(i = next_lit; i < f.num_lits; i++)
 	{
 		f.all_lits[i].is_assigned = 0;
@@ -353,17 +297,17 @@ int DPLL(formula f)
 	formula branch_f = f;
 	branch_f = assign_val(0,next_lit,branch_f);
 
-	printf("calling f_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
+//	printf("calling f_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
 	
-	temp += DPLL(branch_f);
+	result += DPLL(branch_f);
 	
-	printf("returned from f_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
-	return temp;
+//	printf("returned from f_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
+	return result;
 }
 
 formula assign_val(int val, int index, formula f)
 {
-	printf("setting %d to val %d\n", f.all_lits[index].id, val);
+//printf("setting %d to val %d\n", f.all_lits[index].id, val);
 	int i,j;
 	for(i = 0; i < f.num_clauses; i++)
 	{
@@ -377,14 +321,14 @@ formula assign_val(int val, int index, formula f)
 				if(f.clauses[i].lits[j].eval == 1)
 					f.clauses[i].is_satisfied = 1;
 				
-				printf("eval to: %d\n", f.clauses[i].lits[j].eval);	
+//printf("eval to: %d\n", f.clauses[i].lits[j].eval);	
 			}
 		}
 	}
 	f.all_lits[index].is_assigned = 1;
-	print_formula(f);
-	//print_lits(f);
-	printf("assign val returning -----------\n");
+//print_formula(f);
+//print_lits(f);
+//printf("assign val returning -----------\n");
 
 	return f;
 }	
