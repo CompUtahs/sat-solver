@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "DPLL_STRUCTS.H"
+#include "INPUT_VERIFIER.C"
 
-
+/*
 typedef struct literal{
 	//Variable read from file
 	int id;
@@ -24,7 +26,7 @@ typedef struct formula{
 	int num_lits;
 	literal *all_lits;
 }formula;
-
+*/
 
 formula assign_val(int val, int index, formula f);
 int has_empty(formula f);
@@ -183,6 +185,7 @@ formula pure_assign(literal lit, formula f)
 
 			if(f.clauses[i].lits[j].id == lit.id)
 			{
+				//TODO send to assign_val instead
 				f.clauses[i].is_satisfied = 1;
 				f.clauses[i].lits[j].is_assigned = 1;
 				f.clauses[i].lits[j].val = val;
@@ -202,10 +205,10 @@ int is_unit_clause(clause c)
 {
 	if(c.is_satisfied)
 	{
-		printf("c is satisfied\n");
+printf("c is satisfied\n");
 		return 0;
 	}
-	printf("c is unsatified\n");
+printf("c is unsatified\n");
 	
 	int i;
 	int unassigned_count = 0;
@@ -217,7 +220,9 @@ int is_unit_clause(clause c)
 		
 		if(unassigned_count > 1)
 		  return 0; 
-		printf("c's unassigned count %d\n", unassigned_count);
+
+
+printf("c's unassigned count %d\n", unassigned_count);
 	}
 	
 	if(unassigned_count == 1)
@@ -235,7 +240,9 @@ formula unit_prop(clause c, formula f)
 			break;
 	}
 
-	printf("%d id\t %d is pos\n", c.lits[k].id, c.lits[k].is_pos);
+printf("%d id\t %d is pos\n", c.lits[k].id, c.lits[k].is_pos);
+
+
 	int val;
 	if(c.lits[k].is_pos == 1)
 		val = 1;
@@ -252,27 +259,8 @@ formula unit_prop(clause c, formula f)
 		}
 	}
 
-
 	f = assign_val(val, index, f);
-/*	int i,j;
-	for(i = 0; i < f.num_clauses; i++)
-	{
-		for(j = 0; j < f.clauses[i].len; j++)
-		{
-			if(f.clauses[i].lits[j].id == lit.id)
-			{
-				f.clauses[i].lits[j].is_assigned = 1;
-				f.clauses[i].lits[j].val = val;
-				f.clauses[i].lits[j].eval = get_eval(val,f.clauses[i].lits[j].is_pos);
-				}
-		}
-	}
-
-*/
 	printf("unit prop returning -----------\n");
-
-		//print_lits(f);
-
 
 	return f;
 
@@ -311,15 +299,16 @@ int DPLL(formula f)
 		
 			print_formula(f);
 			printf("Back in Main after unit prop\n");
-			i = 0;
+		//	i = 0;
 		}
 	}
-/*	
+/*
 	//get pures
 	for(i = 0; i < f.num_lits; i++)
 	{
 		if(is_pure(f.all_lits[i].id, f))
 		{
+			
 			f = pure_assign(f.all_lits[i], f);
 	
 
@@ -436,7 +425,7 @@ formula assign_val(int val, int index, formula f)
 int evaluate(formula f)
 {
 	
-
+//TODO simply for clauses
 	print_formula(f);
 
 	int i,j;
@@ -700,7 +689,17 @@ int main(int argc, char *argv[])
 	litsfz[0] = alphaz;
 	f3.all_lits = litsfz;
 
+	
+	int err_val = 0;
+	formula f9 = verify(argc,argv,&err_val);
+	if(err_val != 0)
+		printf("\nError\n");
 
-	DPLL(f1);
+	printf("num lits %d num clauses %d\n", f9.num_lits, f9.num_clauses); 
+	print_formula(f9);
+	print_lits(f9);
+	for(i = 0; i< f9.num_lits; i++)
+		printf("%d is ass %d is pos  %d id\n", f9.all_lits[i].is_assigned, 	f9.all_lits[i].is_pos, f9.all_lits[i].id);
+	DPLL(f9);
 	printf("\n%d\n", satisfiable);
 }
