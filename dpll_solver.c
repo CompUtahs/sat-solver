@@ -410,15 +410,15 @@ int main(int argc, char *argv[])
 	formula f9 = verify(argc,argv,&err_val);
 	if(err_val != 0)
 	{
-		printf("ERROR");
+		printf("ERROR\n");
 		return 0;
 	}
 
 //	printf("%d\n",DPLL(f9));
 	if(DPLL(f9))
-		printf("SATISFIABLE");
+		printf("SATISFIABLE\n");
 	else
-		printf("UNSATISFIABLE");
+		printf("UNSATISFIABLE\n");
 
 	return 0;
 }
