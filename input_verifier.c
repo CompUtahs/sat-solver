@@ -158,7 +158,7 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
   int lit_index;
   int num_tokens = 0;
   int line_len = 0;
-  char prev = '\0';
+  char prev = ' ';
   int i;
   for(i = 0; 1; i++)
     {
