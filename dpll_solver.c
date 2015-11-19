@@ -4,20 +4,29 @@
 #include "dpll_structs.h"
 #include "input_verifier.c"
 
-
+/*Predelcared methods*/
 formula assign_val(int val, int index, formula f);
+formula unit_prop(clause c, formula f);
+formula pure_assign(literal lit, formula f);
 int has_empty(formula f);
 int is_unit_clause(clause c);
-formula unit_prop(clause c, formula f);
-formula pure_assign(literal lit, formula f); 
+int is_pure(int id, formula f);
 int evaluate(formula f);
 void print_formula(formula f);
 void print_lits(formula f);
 
+/* Old globals from when we had a hardcoded forumla - probably can be removed
 formula f1;
 int num_lits;
 int satisfiable = 0; 
+*/
 
+/* returns the evaluation of a literal's is_pos & val 
+* 0 0 = 1
+* 0 1 = 0
+* 1 0 = 0
+* 1 1 = 1
+*/
 int get_eval(val, is_pos)
 {
 		int eval = -1;
@@ -38,6 +47,11 @@ int get_eval(val, is_pos)
 		return eval;
 }
 
+/* Loops through the formula and checks if a literal has the same sign throughout 
+* returns 1 for an all pure positive literal
+* returns -1 for an all pure negative literal
+* returns 0 for a non pure literal
+*/
 int is_pure(int id, formula f)
 {
 	int has_pos = 0;
@@ -69,6 +83,14 @@ int is_pure(int id, formula f)
 		return -1;
 }
 
+/* Checks that all of the remaining literals are pure 
+* breaks when it finds a non pure literal
+* if so it will return true
+* else false
+*
+* We check this at the start of every DPLL call to check 
+* the remaining literals for purity
+*/
 int is_consistent(formula f)
 {	
 	int is_con = 1;
@@ -84,6 +106,11 @@ int is_consistent(formula f)
 	return 1;
 }
 
+/* Checks the remaining for any clauses that cause an Unsatisfied formula
+* Breaks on the first unassigned variable it finds
+* If all variables are assigned return 1?
+* This method may need work could possibly be not working.
+*/
 int has_empty(formula f)
 {
 	int i,j;
@@ -107,6 +134,9 @@ int has_empty(formula f)
 	return 0;	
 }
 
+/* If a pure variable it found set all of it's instances to true
+* Takes the literal to assign and should have correct sign 
+*/
 formula pure_assign(literal lit, formula f)
 {
 	int i;
@@ -128,6 +158,11 @@ formula pure_assign(literal lit, formula f)
 	return f;
 }
 
+/* Checks for unit clauses meaning 1 unassigned variable in the entire clause
+* continues on statisfied clause
+* counts unassigned variables breaks more than 1
+* if it is a unit clause propagates that literal through all of its clauses
+*/
 int is_unit_clause(clause c)
 {
 	if(c.is_satisfied)
@@ -155,6 +190,9 @@ int is_unit_clause(clause c)
 		return 0;
 }
 
+/* Propegates the variable that makes this clause true 
+*	through all of its clauses making that true.
+*/
 formula unit_prop(clause c, formula f)
 {
 
@@ -187,7 +225,7 @@ formula unit_prop(clause c, formula f)
 }
 
 //int run_count =0;
-
+/* Main running loop follows the DPLL Algo on Wiki */
 int DPLL(formula f)
 {
 
@@ -305,6 +343,9 @@ int DPLL(formula f)
 	return result;
 }
 
+/* Assign a true or false value to a literal
+* Goes through all of the literals and sets the value
+*/
 formula assign_val(int val, int index, formula f)
 {
 //printf("setting %d to val %d\n", f.all_lits[index].id, val);
