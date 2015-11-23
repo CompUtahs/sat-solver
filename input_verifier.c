@@ -11,6 +11,8 @@ typedef struct lit_count {
   int count;
 } lit_count;
 
+
+
 clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err);
 
 /**
@@ -36,18 +38,20 @@ formula verify(int argc, char** argv, int* err)
   char prob_start[2];
   char cnf[4];
   formula* f;
+  printf("err_val: %d\n", err);
+
   if(argc != 2) 
-  {
-    *err = 1;
-    return *f;
-  }
+    {
+      *err = 1;
+      return *f;
+    }
   input = fopen(argv[1], "r"); // open file for reading only.
   
   if (input == NULL) 
-  {
-    *err = 1;
-    return *f;
-  }
+    {
+      *err = 1;
+      return *f;
+    }
 
   f = malloc(sizeof(formula));
 
@@ -86,21 +90,29 @@ formula verify(int argc, char** argv, int* err)
   // Use array 'possible_lits' to track frequency of appearance of literals
   lit_count possible_lits[num_params + 1];
   memset(possible_lits, 0, sizeof(possible_lits));
-  
+  lit_clauses possible_watches[num_params + 1];
+  memset(possible_lits, 0, sizeof(possible_watches));
+
   // Secure memory for the array of clauses
   clause* clauses = malloc(num_statements * sizeof(clause));
 
+  int erro = 0;
   int index = 0;
+
   // Verify file contents are valid CNF
   while(fgets(curr_line, sizeof(curr_line), input)) 
     {
-      clause curr_clause = parse_clause(curr_line, num_params, possible_lits, err);
-      if(*err)
-	return *f;
+      clause curr_clause = parse_clause(curr_line, num_params, possible_lits, &erro);
+      if(erro)
+	{
+	  *err = erro;
+	  return *f;
+	}
       clauses[index] = curr_clause;
 
       index++;
     }
+
 
   // Determine how many literals appeared during parsing
   int num_actual_lits = 0;
@@ -123,28 +135,51 @@ formula verify(int argc, char** argv, int* err)
 	  lc.id = index;
 	  lc.count = possible_lits[index].count;
 	  lit_counts[curr_lit] = lc;
-	  curr_lit ++;
+	  curr_lit++;
 	}
     }
-  
+
   // Sort the literals from most frequent to least frequently seen, to optimize solution
   qsort(lit_counts, num_actual_lits, sizeof(lit_count), compare_lit_count);
 
-  // Convert the lit_counts to literal structs for the formula to use
-  literal* all_lits = malloc(num_actual_lits * sizeof(literal));
+  // Convert the lit_counts to lit_clauses structs for the formula to use
+  lit_clauses* all_lits = malloc(num_actual_lits * sizeof(lit_clauses));
   for(index = 0; index < num_actual_lits; index++)
     {
+      lit_clauses lc;
+      lc.cur_clause = 0;
+      lc.num_clauses = lit_counts[index].count;
+      lc.clauses = malloc(lc.num_clauses * sizeof(int));
       literal l;
       l.id = lit_counts[index].id;
       l.is_assigned = 0;
-      all_lits[index] = l;
+      lc.lit = l;
+      possible_watches[l.id] = lc;
     }
+
+  for(index = 0; index < num_statements; index++)
+    {
+      int lit_c;
+      for(lit_c = 0; lit_c < clauses[index].len; lit_c++)
+	{
+	  int cur_count = possible_watches[clauses[index].lits[lit_c].id].cur_clause;
+	  possible_watches[clauses[index].lits[lit_c].id].clauses[cur_count];
+	  possible_watches[clauses[index].lits[lit_c].id].cur_clause++;
+	}
+    }
+
+
+
+  for(index = 0; index < num_actual_lits; index++)
+    {
+      all_lits[index] = possible_watches[lit_counts[index].id];
+    }
+
   
   f->num_clauses = num_statements;
   f->num_lits = num_actual_lits;
   f->clauses = clauses;
   f->all_lits = all_lits;
-
   return *f;
 }
 
@@ -160,6 +195,7 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
   int line_len = 0;
   int prev_was_whitespace = 1;
   int i;
+
   for(i = 0; 1; i++)
     {
       char curr = line[i];
@@ -180,7 +216,6 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
 
   literal* lits = malloc(sizeof(literal) * num_tokens);
   char* token = strtok(line, " ");
-
   for(lit_index = 0;lit_index < num_tokens; lit_index++)
     {            
       literal lit;
@@ -208,12 +243,15 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
       lits_seen[val].count++;
       lits_seen[val].id = val;
       lits[lit_index] = lit;
+
       token = strtok(NULL, " ");
+
     }
   
   c.len = num_tokens;
   c.lits = lits;
   c.is_satisfied = 0;
+
   return c;
 }
 
