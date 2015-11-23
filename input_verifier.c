@@ -158,19 +158,26 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
   int lit_index;
   int num_tokens = 0;
   int line_len = 0;
-  char prev = ' ';
+  int prev_was_whitespace = 1;
   int i;
   for(i = 0; 1; i++)
     {
       char curr = line[i];
-      if(curr == '0' && prev == ' ')
+      if(curr == '0' && prev_was_whitespace)
 	break;
-      if(curr == ' ' && prev != ' ')
+      if(curr == ' ')
 	{
-	  num_tokens++;
+	  if(curr == ' ' && !prev_was_whitespace)
+	    {
+	      num_tokens++;
+	    }
+	  prev_was_whitespace = 1;
 	}
-	  prev = curr;
+      else {
+	prev_was_whitespace = 0;
+      }
     }
+
   literal* lits = malloc(sizeof(literal) * num_tokens);
   char* token = strtok(line, " ");
 
@@ -208,4 +215,20 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
   c.lits = lits;
   c.is_satisfied = 0;
   return c;
+}
+
+// Formula destructor
+void annhialate_formula(formula f)
+{
+  free(f.all_lits);
+
+  // Free all literals in clauses
+  int c_count = 0;
+  for(; c_count < f.num_clauses; c_count++)
+    {
+      free(f.clauses[c_count].lits);
+    }
+
+  free(f.clauses);
+
 }

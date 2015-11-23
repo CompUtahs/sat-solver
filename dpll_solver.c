@@ -461,5 +461,6 @@ int main(int argc, char *argv[])
 	else
 		printf("UNSATISFIABLE\n");
 
+	annhialate_formula(f9);
 	return 0;
 }
