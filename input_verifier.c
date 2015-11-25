@@ -3,16 +3,6 @@
 #include "dpll_structs.h"
 #include <string.h>      
 
-/**
- * lit_count allows literals to be tracked by frequency, for future sorting 
- **/
-typedef struct lit_count {
-  int id;
-  int count;
-} lit_count;
-
-
-
 clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err);
 
 /**
@@ -163,7 +153,8 @@ formula verify(int argc, char** argv, int* err)
       for(lit_c = 0; lit_c < clauses[index].len; lit_c++)
 	{
 	  int cur_count = possible_watches[clauses[index].lits[lit_c].id].cur_clause;
-	  possible_watches[clauses[index].lits[lit_c].id].clauses[cur_count];
+	  possible_watches[clauses[index].lits[lit_c].id].clauses[cur_count].clause = index;
+	  possible_watches[clauses[index].lits[lit_c].id].clauses[cur_count].index = lit_c;
 	  possible_watches[clauses[index].lits[lit_c].id].cur_clause++;
 	}
     }
