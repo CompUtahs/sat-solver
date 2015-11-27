@@ -444,21 +444,18 @@ void print_lits(formula f)
 }
 
 
-int main(int argc, char *argv[])
+int main(int argc, char ** argv)
 {
-
   int i;	
   int err_val = 0;
-  printf("err_val add = %d\n", &err_val);
   formula f9 = verify(argc, argv, &err_val);
-  printf("parsed it.\n");
+  
   if(err_val)
     {
       printf("ERROR\n");
       return 0;
     }
 
-  //	printf("%d\n",DPLL(f9));
   if(DPLL(f9))
     printf("SATISFIABLE\n");
   else

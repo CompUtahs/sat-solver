@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "dpll_structs.h"
-#include <string.h>      
+#include <string.h>    
 
 clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err);
 
@@ -28,7 +28,8 @@ formula verify(int argc, char** argv, int* err)
   char prob_start[2];
   char cnf[4];
   formula* f;
-  printf("err_val: %d\n", err);
+
+  memset(curr_line, 0, sizeof(curr_line));
 
   if(argc != 2) 
     {
@@ -76,19 +77,17 @@ formula verify(int argc, char** argv, int* err)
 	    }
 	}      
     }
-
   // Use array 'possible_lits' to track frequency of appearance of literals
   lit_count possible_lits[num_params + 1];
   memset(possible_lits, 0, sizeof(possible_lits));
   lit_clauses possible_watches[num_params + 1];
-  memset(possible_lits, 0, sizeof(possible_watches));
+  memset(possible_watches, 0, sizeof(possible_watches));
 
   // Secure memory for the array of clauses
   clause* clauses = malloc(num_statements * sizeof(clause));
 
   int erro = 0;
   int index = 0;
-
   // Verify file contents are valid CNF
   while(fgets(curr_line, sizeof(curr_line), input)) 
     {
@@ -102,7 +101,6 @@ formula verify(int argc, char** argv, int* err)
 
       index++;
     }
-
 
   // Determine how many literals appeared during parsing
   int num_actual_lits = 0;
@@ -139,7 +137,7 @@ formula verify(int argc, char** argv, int* err)
       lit_clauses lc;
       lc.cur_clause = 0;
       lc.num_clauses = lit_counts[index].count;
-      lc.clauses = malloc(lc.num_clauses * sizeof(int));
+      lc.clauses = malloc(lc.num_clauses * sizeof(clause_index));
       literal l;
       l.id = lit_counts[index].id;
       l.is_assigned = 0;
@@ -153,13 +151,12 @@ formula verify(int argc, char** argv, int* err)
       for(lit_c = 0; lit_c < clauses[index].len; lit_c++)
 	{
 	  int cur_count = possible_watches[clauses[index].lits[lit_c].id].cur_clause;
-	  possible_watches[clauses[index].lits[lit_c].id].clauses[cur_count].clause = index;
-	  possible_watches[clauses[index].lits[lit_c].id].clauses[cur_count].index = lit_c;
-	  possible_watches[clauses[index].lits[lit_c].id].cur_clause++;
+	  int cur_lit = clauses[index].lits[lit_c].id;
+	  possible_watches[cur_lit].clauses[cur_count].clause = index;
+	  possible_watches[cur_lit].clauses[cur_count].index = lit_c;
+	  possible_watches[cur_lit].cur_clause++;
 	}
     }
-
-
 
   for(index = 0; index < num_actual_lits; index++)
     {
@@ -249,6 +246,11 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
 // Formula destructor
 void annhialate_formula(formula f)
 {
+  int lit_count = 0;
+  for(; lit_count < f.num_lits; lit_count++)
+    {
+      free(f.all_lits[lit_count].clauses);
+    }
   free(f.all_lits);
 
   // Free all literals in clauses
@@ -259,5 +261,4 @@ void annhialate_formula(formula f)
     }
 
   free(f.clauses);
-
 }
