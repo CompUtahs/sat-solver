@@ -9,6 +9,11 @@ typedef struct lit_count {
   int count;
 } lit_count;
 
+/**
+ * clause_index tracks two things:
+ * clause - which clause the associated literal appears in
+ * index - where in the clause's lits this literal appears (index)
+ **/ 
 typedef struct clause_index {
   int clause;
   int index;
@@ -24,6 +29,28 @@ typedef struct literal{
   int eval;
 }literal;
 
+/**
+ * lit_clauses tracks a literal's positions in the formula
+ * lit - the literal being tracked
+ * num_clauses - the number of clauses in which this literal appears
+ * cur_clause - used when filling this struct, NOT RELEVANT FOR EXTERNAL USE
+ * clauses - the clause_indexes identifying which clauses this literal appears in,
+ *           and theiry associated indexes
+ * 
+ * To iterate through a literal's clauses, use the following:
+ * 
+ * formula f;
+ * lit_clause lc = all_lits[n]; // Whatever literal/lit_clause you're on at the moment.
+ * int i;
+ * // Loop through the clause_indexes
+ * for(i = 0; i < lc.num_clauses; i++)
+ * {
+ *   clause_index ci = lc.clauses[i];
+ *   // Access the clause at ci.clause, and get the literal at ci.index
+ *   literal lit_to_work_on = f.clauses[ci.clause].lits[ci.index]; 
+ * }
+ * 
+ **/
 typedef struct lit_clauses{
   literal lit;
   int num_clauses;
