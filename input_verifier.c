@@ -91,6 +91,8 @@ formula verify(int argc, char** argv, int* err)
   // Verify file contents are valid CNF
   while(fgets(curr_line, sizeof(curr_line), input)) 
     {
+      if(curr_line[0] == 'c')
+	continue;
       clause curr_clause = parse_clause(curr_line, num_params, possible_lits, &erro);
       if(erro)
 	{
@@ -184,7 +186,7 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
   int line_len = 0;
   int prev_was_whitespace = 1;
   int i;
-
+  
   for(i = 0; 1; i++)
     {
       char curr = line[i];

@@ -1,5 +1,6 @@
 #include "dpll_structs.h"
 #include "input_verifier.c"
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -40,9 +41,9 @@ int find_unit_lit(clause c)
 }
 
 
-int is_satisfied(formula f)
+int is_satisfied(formula* f)
 {
-  return f.num_unsatisfied == 0;
+  return f->num_unsatisfied == 0;
 }
 
 int is_empty_clause(clause c)
@@ -50,18 +51,18 @@ int is_empty_clause(clause c)
   return !c.is_satisfied && c.num_unassigned == 0;
 }
 
-int contains_empty_clause(formula f)
+int contains_empty_clause(formula* f)
 {
   int i = 0;
-  for(; i < f.num_clauses; i++)
+  for(; i < f->num_clauses; i++)
     {
-      if(is_empty_clause(f.clauses[i]))
+      if(is_empty_clause(f->clauses[i]))
 	return 1;
     }
   return 0;
 }
 
-int is_pure_literal(formula f, lit_clauses lc)
+int is_pure_literal(formula* f, lit_clauses lc)
 {
   int is_set = 0;
   int val = 0;
@@ -72,8 +73,8 @@ int is_pure_literal(formula f, lit_clauses lc)
 	break;
 
       clause_index ci = lc.clauses[i];
-      literal curr_lit = f.clauses[ci.clause].lits[ci.index];
-      if(!curr_lit.is_assigned)
+      literal curr_lit = f->clauses[ci.clause].lits[ci.index];
+      if(!f->clauses[ci.clause].is_satisfied && !curr_lit.is_assigned)
 	{
 	  is_set = 1;
 	  val = curr_lit.is_pos;
@@ -83,13 +84,14 @@ int is_pure_literal(formula f, lit_clauses lc)
   for(; i < lc.num_clauses; i++)
     {
       clause_index ci = lc.clauses[i];
-      literal curr_lit = f.clauses[ci.clause].lits[ci.index];
-      if(!curr_lit.is_assigned)
+      literal curr_lit = f->clauses[ci.clause].lits[ci.index];
+      if(!f->clauses[ci.clause].is_satisfied && !curr_lit.is_assigned)
 	{
 	  if(val != curr_lit.is_pos)
 	    return 0;
 	}
     }
+  //  printf("literal: %d\n", lc.lit.id);
 
   return (val ? 1 : -1);
 }
@@ -104,63 +106,73 @@ int eval_lit(int val, int is_pos)
   return ((val && is_pos) || (!val && !is_pos));
 }
 
-void guess(formula f, int lit_index, int guess)
+void guess(formula* f, int lit_index, int guess)
 {
-  //printf("guessing %d to be %d\n", f.all_lits[lit_index].lit.id, guess);
+  if(f->all_lits[lit_index].lit.is_assigned)
+    return;
+  // printf("guessing %d for %d\n", guess, f->all_lits[lit_index].lit.id);
   int i = 0;
-  lit_clauses lc = f.all_lits[lit_index];
+  lit_clauses lc = f->all_lits[lit_index];
   for(; i < lc.num_clauses; i++)
     {
       // set the guess for the lit in each clause
       clause_index cl = lc.clauses[i];
-      f.clauses[cl.clause].num_unassigned--;
+      f->clauses[cl.clause].num_unassigned--;
       // set the value of the literal 
-      f.clauses[cl.clause].lits[cl.index].is_assigned = 1;
-      f.clauses[cl.clause].lits[cl.index].val = guess;
-      f.clauses[cl.clause].lits[cl.index].eval = !(guess ^ f.clauses[cl.clause].lits[cl.index].is_pos);
+      f->clauses[cl.clause].lits[cl.index].is_assigned = 1;
+      f->clauses[cl.clause].lits[cl.index].val = guess;
+      f->clauses[cl.clause].lits[cl.index].eval = !(guess ^ f->clauses[cl.clause].lits[cl.index].is_pos);
 
-      if(f.clauses[cl.clause].lits[cl.index].eval)
+      if(f->clauses[cl.clause].lits[cl.index].eval)
 	{
-	  if(!f.clauses[cl.clause].is_satisfied)
+
+	  // If this clause hasn't been satisied UNTIL NOW
+	  if(!f->clauses[cl.clause].is_satisfied)
 	    {
-	      //print_formula(f);
-	      f.num_unsatisfied--;
+	      f->num_unsatisfied--;
 	    }
-	  f.clauses[cl.clause].is_satisfied++;
+	  f->clauses[cl.clause].is_satisfied++;
+
+	  assert(f->clauses[cl.clause].is_satisfied > 0);
 	}
     }
-  f.all_lits[lit_index].lit.is_assigned = 1;
-  f.all_lits[lit_index].lit.val = guess;
+  f->all_lits[lit_index].lit.is_assigned = 1;
+  f->all_lits[lit_index].lit.val = guess;
+  //  printf("finishing guess\n");
 }
 
-void undo_guess(formula f, int lit_index)
+void undo_guess(formula* f, int lit_index)
 {
-  //printf("undoing it...\n");
+  if(lit_index < 0)
+    return;
+  // printf("undoing %d\n", lit_index);
   int i = 0;
-  lit_clauses lc = f.all_lits[lit_index];
+  lit_clauses lc = f->all_lits[lit_index];
   for(; i < lc.num_clauses; i++)
     {
       // unset the guess for the lit in each clause
       clause_index cl = lc.clauses[i];
-      if(f.clauses[cl.clause].lits[cl.index].eval)
+      if(f->clauses[cl.clause].lits[cl.index].eval)
 	{
-	  f.clauses[cl.clause].is_satisfied--;
-	  if(!f.clauses[cl.clause].is_satisfied)
+	  f->clauses[cl.clause].is_satisfied--;
+	  if(!f->clauses[cl.clause].is_satisfied)
 	    {
-	      f.num_unsatisfied++;
-	      // printf("plus one...??\n");
+	      f->num_unsatisfied++;
 	    }
 	}
 
-      f.clauses[cl.clause].num_unassigned++;
+      f->clauses[cl.clause].num_unassigned++;
       // set the value of the literal 
-      f.clauses[cl.clause].lits[cl.index].is_assigned = 0;
-      f.clauses[cl.clause].lits[cl.index].val = 0;
-      f.clauses[cl.clause].lits[cl.index].eval = 0;
+      f->clauses[cl.clause].lits[cl.index].is_assigned = 0;
+      f->clauses[cl.clause].lits[cl.index].val = 0;
+      f->clauses[cl.clause].lits[cl.index].eval = 0;
     }
+  f->all_lits[lit_index].lit.is_assigned = 0;
+  f->all_lits[lit_index].lit.val = 0;
+  //  printf("finished undoing...\n");
 }
 
-int is_satisfiable(formula f)
+int is_satisfiable(formula * f)
 {
   if(is_satisfied(f))
     return 1;
@@ -169,118 +181,185 @@ int is_satisfiable(formula f)
   // Count and map unit clauses
   int i;
   int unit_count = 0;
-  for(i = 0; i < f.num_clauses; i++)
+  //  printf("starting units\n");
+  for(i = 0; i < f->num_clauses; i++)
     {
-      if(!f.clauses[i].is_satisfied && is_unit_clause(f.clauses[i]))
+      if(!f->clauses[i].is_satisfied && is_unit_clause(f->clauses[i]))
 	{
 	  // count it
 	  unit_count++;
 	}
     }
-  clause_index unit_clauses[unit_count];
-  int clause_index_count = 0;
-  for(i = 0; i < f.num_clauses; i++)
+  
+  clause_index* unit_clauses = NULL;
+  int* unit_lits = NULL;
+  if(unit_count)
     {
-      if(!f.clauses[i].is_satisfied && is_unit_clause(f.clauses[i]))
+      unit_clauses = malloc(sizeof(clause_index) * unit_count); 
+      unit_lits = malloc(sizeof(int) * unit_count);
+      //      assert(unit_clauses != NULL);
+      int clause_index_count = 0;
+      for(i = 0; i < f->num_clauses; i++)
 	{
-	  // count it
-	  clause_index ci;
-	  ci.clause = i;
-	  ci.index = find_unit_lit(f.clauses[i]);
-	  unit_clauses[clause_index_count] = ci;
-	  clause_index_count++;
-	}
-    }
-  int l_index = 0;
-  for(; l_index < unit_count; l_index++)
-    {
-      clause_index cur_cl = unit_clauses[l_index];
-      literal cur_lit = f.clauses[cur_cl.clause].lits[cur_cl.index];
-      for(i = 0; i < f.num_lits; i++)
-	{
-	  if(f.all_lits[i].lit.id == cur_lit.id && 
-	     !f.all_lits[i].lit.is_assigned)
+	  if(!f->clauses[i].is_satisfied && is_unit_clause(f->clauses[i]))
 	    {
-	      guess(f, i, cur_lit.is_pos);
-	      unit_clauses[l_index].index = i;
-	      break;
-	    }	    
+	      // count it
+	      clause_index ci;
+	      ci.clause = i;
+	      ci.index = find_unit_lit(f->clauses[i]);
+	      unit_clauses[clause_index_count] = ci;
+	      clause_index_count++;
+	    }
+	}
+      int l_index = 0;
+      for(; l_index < unit_count; l_index++)
+	{
+	  clause_index cur_cl = unit_clauses[l_index];
+	  literal cur_lit = f->clauses[cur_cl.clause].lits[cur_cl.index];
+	  unit_lits[l_index] = -1;
+	  for(i = 0; i < f->num_lits; i++)
+	    {
+	      if(f->all_lits[i].lit.id == cur_lit.id && 
+		 !f->all_lits[i].lit.is_assigned)
+		{
+		  guess(f, i, cur_lit.is_pos);
+		  unit_lits[l_index] = i;
+		  break;
+		}	    
+	    }
 	}
     }
 
-  //  printf("did %d unit clauses.\n", unit_count);
+  //   printf("did %d unit clauses.\n", unit_count);
   //  print_formula(f);
 
   // Count and assign pure literals
   int pure_lit_count = 0;
-  for(i = 0; i < f.num_lits; i++)
+  for(i = 0; i < f->num_lits; i++)
     {
-      if(!f.all_lits[i].lit.is_assigned && is_pure_literal(f, f.all_lits[i]))
+      if(!f->all_lits[i].lit.is_assigned && is_pure_literal(f, f->all_lits[i]))
 	pure_lit_count++;
     }
   
-  int pure_lits[pure_lit_count];
-  for(i = 0; i < f.num_lits; i++)
+  int * pure_lits = NULL;
+  if(pure_lit_count)
     {
-      if(!f.all_lits[i].lit.is_assigned)
+      int pure_ind = 0;
+      pure_lits = malloc(sizeof(int)*pure_lit_count);
+      for(i = 0; i < f->num_lits; i++)
 	{
-	  int pure_val = is_pure_literal(f, f.all_lits[i]);
-
+	  if(!f->all_lits[i].lit.is_assigned && is_pure_literal(f, f->all_lits[i]))
+	    {
+	      pure_lits[pure_ind] = i;
+	      pure_ind++;
+	    }
+	}
+      for(i = 0; i < pure_lit_count; i++)
+	{
+	  int pure_val = is_pure_literal(f, f->all_lits[pure_lits[i]]);
+	  
 	  if(!pure_val)
 	    continue;
-	  //printf("pure value of %d for %d\n", pure_val, f.all_lits[i].lit.id);
 	  if(pure_val > 0)
 	    {
-	      guess(f, i, 1);
+	      guess(f, pure_lits[i], 1);
 	    }
 	  else
 	    {
 	      // Assign it false.
-	      guess(f, i, 0);
+	      guess(f, pure_lits[i], 0);
 	    }
-	  pure_lits[pure_lit_count] = i;
-	  pure_lit_count++;
+	}	  
+    }
+  //printf("did %d pure literals.\n", pure_lit_count);
+  int x = 0;
+  for(; x < pure_lit_count; x++)
+    {
+      // printf("lit ind %d: %d ", pure_lits[x], f->all_lits[pure_lits[x]].lit.id);
+    }
+  //printf("\n");
+  // print_formula(f); 
+    int found = 0;
+  // pick next literal (index) as i
+  for(i = 0; i < f->num_lits; i++)
+    {
+      if(!f->all_lits[i].lit.is_assigned)
+	{
+	  found = 1;
+	  break;
 	}
     }
-  
-  //  printf("did %d pure literals.\n", pure_lit_count);
-  // print_formula(f); 
-
-  // pick next literal (index) as i
-  for(i = 0; i < f.num_lits; i++)
+  if(!found)
     {
-      if(!f.all_lits[i].lit.is_assigned)
-	break;
+      if(pure_lits != NULL)
+	free(pure_lits);
+      if(unit_clauses != NULL)
+	{
+	  free(unit_clauses);
+	  free(unit_lits);
+	}
+      return 0;
     }
 
   // Guess true
   guess(f, i, 1);
   
-  if(is_satisfiable(f))
-    return 1;
+  if(is_satisfiable(f)) 
+    {
+      //   printf("going up true\n");
+      if(pure_lits != NULL)
+	free(pure_lits);
+      if(unit_clauses != NULL)
+	{
+	  free(unit_clauses);
+	  free(unit_lits);
+	}
+      return 1;
+    }
+
   // Undo guess
   undo_guess(f, i);
-
+  
   // Guess false
   guess(f, i, 0);
   if(is_satisfiable(f))
-    return 1;
-
+    {
+      if(pure_lits != NULL)
+	free(pure_lits);
+      if(unit_clauses != NULL)
+	{
+	  free(unit_clauses);
+	  free(unit_lits);
+	}
+      //   printf("going up false");
+      return 1;
+    }
   // Undo guess
   undo_guess(f, i);
 
   // undo unit clauses and pure literals
   int ind = 0;
+  // printf("undoing units\n");
   for(; ind < unit_count; ind++)
     {
-      undo_guess(f, unit_clauses[ind].index);
+      undo_guess(f, unit_lits[ind]);
     }
+  //  printf("undoing pures\n");
   for(ind = 0; ind < pure_lit_count; ind++)
     {
+      // printf("trying to access %d of %d slots\n", ind, (sizeof(pure_lits) / sizeof(int)));
+      //  printf("%d\n", pure_lits);
       undo_guess(f, pure_lits[ind]);
     }
-
+  // printf("going up :(\n");
   // return
+  if(pure_lits != NULL)
+    free(pure_lits);
+  if(unit_clauses != NULL)
+    {
+      free(unit_clauses);
+      free(unit_lits);
+    }
   return 0;
 }
 
@@ -288,14 +367,15 @@ int main(int argc, char** argv)
 {
   int err = 0;
   formula f = verify(argc, argv, &err);
-  //print_formula(f);
   if(err)
     {
       printf("ERROR");
-      return;
     }
-  if(is_satisfiable(f))
+  else if(is_satisfiable(&f))
     printf("SATISFIABLE\n");
   else
     printf("UNSATISFIABLE\n");
+  
+  annhialate_formula(f);
+
 }
