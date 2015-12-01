@@ -19,7 +19,7 @@ dpll_solver_out = ""
 
 # test the solver
 while literals < 25:
-	# always end on ten more clauses than literals
+	# always end on four times more clauses than literals
 	while clauses < (literals * 4):
 		# make random dimacs file
 		subprocess.call(['./r_dimacs_gen', str(literals), str(clauses), str(seed)]) 
