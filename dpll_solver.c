@@ -74,35 +74,6 @@ int is_pure(lit_clauses lc, formula f)
     return -1;
 
 }
-/*  int has_pos = 0;
-  int has_neg = 0;
-
-  int i, j;
-  for(i = 0; i < f.num_clauses; i++)
-    {
-      if (f.clauses[i].is_satisfied == 1)
-	continue;
-      // loop through all the literals of each clause
-      for(j = 0; j < f.clauses[i].len; j++)
-	{
-	  if(f.clauses[i].lits[j].id == id)
-	    {
-	      if(f.clauses[i].lits[j].is_pos)	
-		has_pos = 1;
-	      else
-		has_neg = 1;
-
-	      if(has_pos && has_neg)
-		return 0;
-	    }
-	}
-    }
-  if(has_pos)
-    return 1;	
-  else
-    return -1;
-}
-*/
 
 /* Checks that all of the remaining literals are pure 
  * breaks when it finds a non pure literal
@@ -112,22 +83,6 @@ int is_pure(lit_clauses lc, formula f)
  * We check this at the start of every DPLL call to check 
  * the remaining literals for purity
  */
-/*
-int is_consistent(formula f)
-{	
-  int is_con = 1;
-  int i;
-  for(i = 0; i < f.num_lits; i++)
-    {
-      if (f.all_lits[i].lit.is_assigned == 1)
-	continue;
-      is_con = is_pure(f.all_lits[i].lit.id, f);
-      if(is_con == 0)
-	return 0;
-    }
-  return 1;
-}
-*/
 int is_consistent(formula f)
 {	
   int is_con = 1;
@@ -203,10 +158,8 @@ int is_unit_clause(clause c)
 {
   if(c.is_satisfied)
     {
-      //printf("c is satisfied\n");
       return 0;
     }
-  //printf("c is unsatified\n");
 	
   int i;
   int unassigned_count = 0;
@@ -254,40 +207,24 @@ formula unit_prop(clause c, formula f)
     }
 
   f = assign_val(val, index, f);
-  //printf("unit prop returning -----------\n");
-
   return f;
 
 }
 
-int run_count =0;
+
 /* Main running loop follows the DPLL Algo on Wiki */
 int DPLL(formula f)
 {
 
-  run_count ++;
-
-
-  printf("\n\nDPLL run count %d\n",  run_count);		
- // print_formula(f);
-
-
   int i, j, next_lit, all_assigned = 0;
+
   //check if the remaining variables are consistent	
   if(is_consistent(f))
     return 1;
 
-  //printf("\n\nDPLL run count %d\n",  run_count);		
-
- // print_formula(f);
-
   //check for an unsatisfiable clause aka an empty clause
   if(has_empty(f))
     return 0;
-
-  //printf("\n\nDPLL run count %d\n",  run_count);		
-  
- // print_formula(f);
 
 	//unit prop	
   for(i = 0; i < f.num_clauses; i++)
@@ -297,18 +234,12 @@ int DPLL(formula f)
 	{
 	  f = unit_prop(f.clauses[i], f);
 	  i = 0;
-	//  printf("Back in Main after unit prop\n");
-	//  print_formula(f);
 	}
       if(has_empty(f))
 	return 0;
     }
   if (evaluate(f))
     return 1;
-
- //printf("\n\nDPLL run count %d\n",  run_count);		
-  
-//  print_formula(f);
 
 	//get pures
   for(i = 0; i < f.num_lits; i++)
@@ -324,22 +255,14 @@ int DPLL(formula f)
 	    f.all_lits[i].lit.is_pos = 0;
 
 	  f = pure_assign(f.all_lits[i].lit, f);
-	 // printf("Back in Main after unit pure assign\n");
-		
-//  print_formula(f);
 	}
       if (evaluate(f))
 	return 1;
     }
 
- // printf("\n\nDPLLs run count %d\n",  run_count);		
- 
- // print_formula(f);
-	//printf("here");
 	 //choose next literal
   for(i = 0; i < f.num_lits; i++)
     {
-      //printf("%d is assigned: %d\n",f.all_lits[i].id,f.all_lits[i].is_assigned);
       if(!(f.all_lits[i].lit.is_assigned))
 	{
 	  next_lit = i;
@@ -357,13 +280,12 @@ int DPLL(formula f)
 	
 	// get a list of variables that are unassigned at this point
 	// will be used to unassign variables after this branch executes
-	print_formula(f);
+	//print_formula(f);
 	int unassigned[f.num_lits];
 	int unass_count = 0;
 	for(i = next_lit; i < f.num_lits; i++)
 	{
 	
-//		printf("i= %i, limit= %i \n", i, f.num_lits);
 		if(next_lit + 1 >= f.num_lits)
 			break;
 		if(f.all_lits[i].lit.is_assigned == 0)
@@ -372,11 +294,7 @@ int DPLL(formula f)
 			unass_count++;
 		}
 	}
-	for(i = 0; i < unass_count; i++)
-	{
-		printf("%i is u\n", f.all_lits[unassigned[i]].lit.id);
-	}
-
+	
 	// get list of clauses that are already satisfied
 	// will be used to reset satisfied state
 	int unsatisfied[f.num_clauses];
@@ -389,22 +307,13 @@ int DPLL(formula f)
 			unsat_count++;
 		}
   }
-
-	for(i = 0; i < unsat_count; i++)
-	{
-		printf("clause %i is u\n", unsatisfied[i]);
-	}
-		//	int run_stamp = run_count;
 	
   //branch true
   formula branch_t = f;	
   branch_t = assign_val(1,next_lit,branch_t);
-  //printf("calling t_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
-  //printf("returned from t_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
 	
   int result = DPLL(branch_t);
 	
- // printf("\n\nDPLL run count %d\n",  run_count);		
 	//exit early
 	if(result == 1)
 		return 1;
@@ -414,7 +323,6 @@ int DPLL(formula f)
 	//unassign variables
 	for(i = 0; i < unass_count; i++)
 	{
-	//	printf("i= %i, limit= %i \n", i, unass_count);
 		lit_clauses lc = f.all_lits[unassigned[i]];
 		for(j = 0; j < lc.num_clauses; j++)
 		{
@@ -427,40 +335,15 @@ int DPLL(formula f)
 	//reset satisfied state
 	for(i = 0; i < unsat_count; i++)
 	{
-	
-	//	printf("i= %i, limit= %i \n", i, unsat_count);
 		f.clauses[unsatisfied[i]].is_satisfied = 0; 
 	}	
-/*	
-  //unassign variables from the other branch below this next lit -- this is our backtracking
-  for(i = next_lit; i < f.num_lits; i++)
-    {
-      f.all_lits[i].lit.is_assigned = 0;
-		
-      for(j = 0; j < f.num_clauses; j++)
-	{
-	  f.clauses[j].is_satisfied = 0;
-	  int k;
-	  for(k = 0; k < f.clauses[j].len; k++)
-	    {
-	      if(f.clauses[j].lits[k].id == f.all_lits[i].lit.id)
-		f.clauses[j].lits[k].is_assigned = 0;
-	    }
-	}	
-    }
-*/
-
 
   // branch false
   formula branch_f = f;
   branch_f = assign_val(0,next_lit,branch_f);
 
-  //	printf("calling f_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
-	
   result += DPLL(branch_f);
 	
-  //printf("\n\nDPLL run count %d\n",  run_count);		
-  //	printf("returned from f_branch %d run %d\n", f.all_lits[next_lit].id, run_stamp);
   return result;
 }
 
@@ -484,37 +367,9 @@ formula assign_val(int val, int index, formula f)
 	
 	f.all_lits[index].lit.is_assigned = 1;
 
-	//print_formula(f);
-		
 	return f;
 }
-/*
-  //printf("setting %d to val %d\n", f.all_lits[index].id, val);
-  int i,j;
-  for(i = 0; i < f.num_clauses; i++)
-    {
-      for(j = 0; j < f.clauses[i].len; j++)
-	{
-	  if(f.clauses[i].lits[j].id == f.all_lits[index].lit.id)
-	    {
-	      f.clauses[i].lits[j].val = val;
-	      f.clauses[i].lits[j].eval = get_eval(val, f.clauses[i].lits[j].is_pos);	
-	      f.clauses[i].lits[j].is_assigned = 1;
-	      if(f.clauses[i].lits[j].eval == 1)
-		f.clauses[i].is_satisfied = 1;
-				
-	      //printf("eval to: %d\n", f.clauses[i].lits[j].eval);	
-	    }
-	}
-    }
-  f.all_lits[index].lit.is_assigned = 1;
-  //print_formula(f);
-  //print_lits(f);
-  //printf("assign val returning -----------\n");
 
-  return f;
-}	
-*/
 int evaluate(formula f)
 {
   int i;
@@ -566,6 +421,7 @@ void print_formula(formula current_formula)
 
 
 }
+
 /* Debugging prints*/
 void print_lits(formula f)
 {
