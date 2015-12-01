@@ -168,6 +168,7 @@ formula verify(int argc, char** argv, int* err)
   f->num_lits = num_actual_lits;
   f->clauses = clauses;
   f->all_lits = all_lits;
+  f->num_unsatisfied = num_statements;
   return *f;
 }
 
@@ -237,6 +238,7 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
     }
   
   c.len = num_tokens;
+  c.num_unassigned = num_tokens;
   c.lits = lits;
   c.is_satisfied = 0;
 

@@ -60,6 +60,7 @@ typedef struct lit_clauses{
 
 typedef struct clause{
   int len;
+  int num_unassigned;
   literal *lits;
   int is_satisfied;
 }clause;
@@ -69,5 +70,6 @@ typedef struct formula{
   clause *clauses;
   int num_lits;
   lit_clauses * all_lits;
+  int num_unsatisfied;
 }formula;
 #endif
