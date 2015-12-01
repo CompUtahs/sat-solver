@@ -20,7 +20,7 @@ dpll_solver_out = ""
 # test the solver
 while literals < 25:
 	# always end on ten more clauses than literals
-	while clauses < (literals + 10):
+	while clauses < (literals * 4):
 		# make random dimacs file
 		subprocess.call(['./r_dimacs_gen', str(literals), str(clauses), str(seed)]) 
                 minisat_out = subprocess.Popen(['minisat', '-verb=0', 'random_dimacs.txt'], stdout=PIPE)
@@ -33,17 +33,17 @@ while literals < 25:
 		dpll_solver_out = subprocess.check_output(['./dpll_solver', 'random_dimacs.txt'])
  #               print dpll_solver_out
 		#compare the endings of both captured outputs
-		if output.endswith('SATISFIABLE\n'):
-			if dpll_solver_out.endswith('SATISFIABLE\n'): # if minisat and dpll_solver match as satisfiable
+		if output.endswith('UNSATISFIABLE\n'):
+			if dpll_solver_out.endswith('UNSATISFIABLE\n'): # if minisat and dpll_solver match as satisfiable
 				solver_matches = solver_matches + 1
-			elif dpll_solver_out.endswith('UNSATISFIABLE\n'): # if minisat and dpll_solver do not match
+			elif dpll_solver_out.endswith('SATISFIABLE\n'): # if minisat and dpll_solver do not match
 				solver_mismatches = solver_mismatches + 1
 			else:
 				print 'error in dppl_solver output'
-		elif output.endswith('UNSATISFIABLE\n'):
-			if dpll_solver_out.endswith('UNSATISFIABLE\n'): # if minisat and dpll_solver match as unsatisfiable
+		elif output.endswith('SATISFIABLE\n'):
+			if dpll_solver_out.endswith('SATISFIABLE\n'): # if minisat and dpll_solver match as unsatisfiable
 				solver_matches = solver_matches + 1
-			elif dpll_solver_out.endswith('SATISFIABLE\n'): # if minisat and dpll_solver do not match
+			elif dpll_solver_out.endswith('UNSATISFIABLE\n'): # if minisat and dpll_solver do not match
 				solver_mismatches = solver_mismatches + 1
 			else:	
 				print 'error in dppl_solver output'
