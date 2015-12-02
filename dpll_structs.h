@@ -27,6 +27,7 @@ typedef struct literal{
   int is_assigned;
   int val;
   int eval;
+  int index;
 }literal;
 
 /**
@@ -35,7 +36,7 @@ typedef struct literal{
  * num_clauses - the number of clauses in which this literal appears
  * cur_clause - used when filling this struct, NOT RELEVANT FOR EXTERNAL USE
  * clauses - the clause_indexes identifying which clauses this literal appears in,
- *           and theiry associated indexes
+ *           and their associated indexes
  * 
  * To iterate through a literal's clauses, use the following:
  * 

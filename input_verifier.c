@@ -231,6 +231,7 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
       lit.is_assigned = 0;
       lit.val = 0;
       lit.eval = 0;
+      lit.index = 0;
       lits_seen[val].count++;
       lits_seen[val].id = val;
       lits[lit_index] = lit;
