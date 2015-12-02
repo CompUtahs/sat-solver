@@ -1,6 +1,9 @@
 TEAM COMPUTAHS
+
 Jon Curry | Mike Fleming | AJ Johnson | Ben Naugle
+
 Nov 2015
+
 CS 5959 - Writing Solid Code
 
 This sat solver is designed to work with dimacs cnf files, determinig if they are "SATISFIABLE" or "UNSATISFIABLE".
