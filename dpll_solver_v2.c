@@ -117,14 +117,16 @@ int contains_empty_clause(formula* f)
 
 /**
  * Returns 0 if the literal in question is not pure
- * Returns 1 if the literal is pure AND should be set to 1
- * Returns -1 if the literal is pure AND should be set to -1
+ * Returns positive value if the literal is pure AND should be set to 1
+ * Returns negative value if the literal is pure AND should be set to -1
  *
  * Pure literals are defined as only appearing with a single
  * value (+ or -) in the remaining unsatisfied clauses
  **/
+/*
 int is_pure_literal(formula* f, lit_clauses lc)
 {
+  
   int is_set = 0;
   int val = 0;
   int i = 0;
@@ -157,6 +159,19 @@ int is_pure_literal(formula* f, lit_clauses lc)
 
   // Return 1 if val != 0, and -1 otherwise
   return (val ? 1 : -1);
+ 
+}
+*/
+
+int is_pure_literal(lit_clauses lc)
+{
+  if(!lc.num_unsatisfied)
+    return 0;
+
+  if(lc.purity == lc.num_unsatisfied || lc.purity == 0)
+    return (lc.purity ? 1 : -1);
+
+  return 0;
 }
 
 /**
@@ -177,8 +192,8 @@ void guess(formula* f, int lit_index, int guess)
 {
   // Immediately return if this value has already been guessed
   if(f->all_lits[lit_index].lit.is_assigned)
-      return;   
-  
+      return;   .
+
   int i;
   lit_clauses lc = f->all_lits[lit_index];
 
@@ -195,7 +210,6 @@ void guess(formula* f, int lit_index, int guess)
 
       // Assign the guess to the specific literal 
       f->clauses[cl.clause].lits[cl.index].is_assigned = 1;
-      f->clauses[cl.clause].lits[cl.index].val = guess;
       f->clauses[cl.clause].lits[cl.index].eval = !(guess ^ f->clauses[cl.clause].lits[cl.index].is_pos);
 
       // In the case that this literal satisfies the clause
@@ -207,6 +221,13 @@ void guess(formula* f, int lit_index, int guess)
 	    {
 	      // Decrement the number of "unsatisfied" clauses in the formula
 	      f->num_unsatisfied--;
+	      int lit_ind = 0;
+	      for(; lit_ind < f->clauses[cl.clause].len; lit_ind++)
+		{
+		  int all_lits_ind = f->clauses[cl.clause].lits[lit_ind].index;
+		  f->all_lits[all_lits_ind].num_unsatisfied--;
+		  f->all_lits[all_lits_ind].purity -= f->clauses[cl.clause].lits[lit_ind].is_pos;
+		}
 	    }
 	  // Increment the is_satisfied counter/"boolean"
 	  f->clauses[cl.clause].is_satisfied++;
@@ -215,9 +236,9 @@ void guess(formula* f, int lit_index, int guess)
 	  assert(f->clauses[cl.clause].is_satisfied > 0);
 	}
     }
+
   // Assign the value of the literal in the all_lits array
   f->all_lits[lit_index].lit.is_assigned = 1;
-  f->all_lits[lit_index].lit.val = guess;
 }
 
 /**
@@ -247,6 +268,13 @@ void undo_guess(formula* f, int lit_index)
 	    {
 	      // Increment the number of unsatisfied clauses in the formula
 	      f->num_unsatisfied++;
+	      int lit_ind = 0;
+	      for(; lit_ind < f->clauses[cl.clause].len; lit_ind++)
+		{		  
+		  int all_lits_ind = f->clauses[cl.clause].lits[lit_ind].index; 
+		  f->all_lits[all_lits_ind].num_unsatisfied++;
+		  f->all_lits[all_lits_ind].purity += f->clauses[cl.clause].lits[lit_ind].is_pos;
+		}
 	    }
 	}
 
@@ -254,19 +282,16 @@ void undo_guess(formula* f, int lit_index)
       f->clauses[cl.clause].num_unassigned++;
       // Unset the value of the literal 
       f->clauses[cl.clause].lits[cl.index].is_assigned = 0;
-      f->clauses[cl.clause].lits[cl.index].val = 0;
-      f->clauses[cl.clause].lits[cl.index].eval = 0;
     }
 
   // Unset the literal in the all_lits array
   f->all_lits[lit_index].lit.is_assigned = 0;
-  f->all_lits[lit_index].lit.val = 0;
 }
 
 /**
  * Recursive formula that determines satisfiability of a given formula
  **/
-int is_satisfiable(formula * f)
+int is_satisfiable(formula * f, int last_guess_clause_ind)
 {
   // Return 1 if the formula has been satisfied
   if(is_satisfied(f))
@@ -342,7 +367,7 @@ int is_satisfiable(formula * f)
       int cur_pure_count = 0;
       for(i = 0; i < f->num_lits; i++)	
 	if(!f->all_lits[i].lit.is_assigned &&
-	   is_pure_literal(f, f->all_lits[i]))
+	   is_pure_literal(f->all_lits[i]))
 	  cur_pure_count++;
       
       // If any pure literals were found
@@ -354,7 +379,7 @@ int is_satisfiable(formula * f)
 	  
 	  // Fill cur_pure_lits with pure literals
 	  for(i = 0; i < f->num_lits; i++)	   
-	    if(!f->all_lits[i].lit.is_assigned && is_pure_literal(f, f->all_lits[i]))
+	    if(!f->all_lits[i].lit.is_assigned && is_pure_literal(f->all_lits[i]))
 	      {
 		cur_pure_lits[pure_ind] = i;
 		pure_ind++;
@@ -363,7 +388,7 @@ int is_satisfiable(formula * f)
 	  // Propogate the pure literals
 	  for(i = 0; i < cur_pure_count; i++)
 	    {
-	      int pure_val = is_pure_literal(f, f->all_lits[cur_pure_lits[i]]);
+	      int pure_val = is_pure_literal(f->all_lits[cur_pure_lits[i]]);
 	      
 	      if(pure_val > 0) // pure_val > 0 means set literal to 1
 		guess(f, cur_pure_lits[i], 1);
@@ -382,6 +407,8 @@ int is_satisfiable(formula * f)
       // Determine if at leas one clause/literal was eliminated
       at_least_one_reduced = cur_unit_count | cur_pure_count;
     }
+
+  //printf("Just did %d units, %d pures.\n", unit_count, pure_count);
   
   // If the previous guesses brought us to a satisfied state, that's awesome!
   if(is_satisfied(f))
@@ -393,7 +420,7 @@ int is_satisfiable(formula * f)
       int found = 0;
       // pick next literal to guess as i
       int i;
-      for(i = 0; i < f->num_clauses; i++)
+      for(i = 0/*last_guess_clause_ind*/; i < f->num_clauses; i++)
 	{
 	  // First literal that appears in an unsatisfied clause is chosen
 	  // VERY naive, but it works
@@ -411,7 +438,7 @@ int is_satisfiable(formula * f)
 	  // Guess true and check for satisfiability after the guess
 	  guess(f, i, 1);
       
-	  if(is_satisfiable(f)) 
+	  if(is_satisfiable(f, i)) 
 	    {
 	      if(pure_lits != NULL)
 		free(pure_lits);
@@ -426,7 +453,7 @@ int is_satisfiable(formula * f)
 	  // Guess false for the same lit, and check for satisfiability again
 	  guess(f, i, 0);
 
-	  if(is_satisfiable(f))
+	  if(is_satisfiable(f, i))
 	    {
 	      if(pure_lits != NULL)
 		free(pure_lits);
@@ -464,17 +491,20 @@ int is_satisfiable(formula * f)
  * Adds the appropriate/associated indexes to the clauses' literals
  * The literal.index value corresponds to where the literal exists in all_lits
  **/
-void give_index(formula* f)
+void fill_formula(formula* f)
 {
   int i = 0;
   for(; i < f->num_lits; i++)
     {
       int j = 0;
+      f->all_lits[i].purity = 0;
+      f->all_lits[i].num_unsatisfied = f->all_lits[i].num_clauses;
       for(; j < f->all_lits[i].num_clauses; j++)
 	{
 	  clause_index ci = f->all_lits[i].clauses[j];
 	  literal* lit = &(f->clauses[ci.clause].lits[ci.index]);
 	  lit->index = i;
+	  f->all_lits[i].purity += lit->is_pos;
 	}
     }
 }
@@ -524,9 +554,9 @@ int main(int argc, char** argv)
   else
     {
       // Fill the formula with indexes
-      give_index(&f);
+      fill_formula(&f);
 
-      if(is_satisfiable(&f))
+      if(is_satisfiable(&f, 0))
 	printf("SATISFIABLE\n");
       else
 	printf("UNSATISFIABLE\n");

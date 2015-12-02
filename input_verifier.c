@@ -192,9 +192,9 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
       char curr = line[i];
       if(curr == '0' && prev_was_whitespace)
 	break;
-      if(curr == ' ')
+      if(curr == ' ' || curr == '\t')
 	{
-	  if(curr == ' ' && !prev_was_whitespace)
+	  if(!prev_was_whitespace)
 	    {
 	      num_tokens++;
 	    }
@@ -206,7 +206,7 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
     }
 
   literal* lits = malloc(sizeof(literal) * num_tokens);
-  char* token = strtok(line, " ");
+  char* token = strtok(line, " \t");
   for(lit_index = 0;lit_index < num_tokens; lit_index++)
     {            
       literal lit;
@@ -236,7 +236,7 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
       lits_seen[val].id = val;
       lits[lit_index] = lit;
 
-      token = strtok(NULL, " ");
+      token = strtok(NULL, " \t");
 
     }
   
