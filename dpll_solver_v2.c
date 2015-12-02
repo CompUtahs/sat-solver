@@ -103,15 +103,10 @@ int is_empty_clause(clause c)
 int contains_empty_clause(formula* f)
 {
   int i = 0;
-  for(; i < f->num_clauses; i++)
-    {
-      if(is_empty_clause(f->clauses[i]))
-	{
-	  //printf("%d is empty: ", i);
-	  //print_clause(f->clauses[i]);
+  for(; i < f->num_clauses; i++)    
+      if(is_empty_clause(f->clauses[i]))	
 	  return 1;
-	}
-    }
+
   return 0;
 }
 
@@ -123,46 +118,6 @@ int contains_empty_clause(formula* f)
  * Pure literals are defined as only appearing with a single
  * value (+ or -) in the remaining unsatisfied clauses
  **/
-/*
-int is_pure_literal(formula* f, lit_clauses lc)
-{
-  
-  int is_set = 0;
-  int val = 0;
-  int i = 0;
-  // Find the value of the first unassigned literal
-  for(; i < lc.num_clauses; i++)
-    {
-      if(is_set)
-	break;
-
-      clause_index ci = lc.clauses[i];
-      literal curr_lit = f->clauses[ci.clause].lits[ci.index];
-      if(!f->clauses[ci.clause].is_satisfied && !curr_lit.is_assigned)
-	{
-	  is_set = 1;
-	  val = curr_lit.is_pos;
-	}
-    }
-  
-  // Loop through to guarantee purity
-  for(; i < lc.num_clauses; i++)
-    {
-      clause_index ci = lc.clauses[i];
-      literal curr_lit = f->clauses[ci.clause].lits[ci.index];
-      if(!f->clauses[ci.clause].is_satisfied && !curr_lit.is_assigned)
-	{
-	  if(val != curr_lit.is_pos)
-	    return 0;
-	}
-    }
-
-  // Return 1 if val != 0, and -1 otherwise
-  return (val ? 1 : -1);
- 
-}
-*/
-
 int is_pure_literal(lit_clauses lc)
 {
   if(!lc.num_unsatisfied)
@@ -192,7 +147,7 @@ void guess(formula* f, int lit_index, int guess)
 {
   // Immediately return if this value has already been guessed
   if(f->all_lits[lit_index].lit.is_assigned)
-      return;   .
+      return;
 
   int i;
   lit_clauses lc = f->all_lits[lit_index];
@@ -407,8 +362,6 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
       // Determine if at leas one clause/literal was eliminated
       at_least_one_reduced = cur_unit_count | cur_pure_count;
     }
-
-  //printf("Just did %d units, %d pures.\n", unit_count, pure_count);
   
   // If the previous guesses brought us to a satisfied state, that's awesome!
   if(is_satisfied(f))
