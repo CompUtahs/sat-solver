@@ -75,6 +75,10 @@ typedef struct formula{
   lit_clauses * all_lits;
   int num_unsatisfied;
   int has_empty_clause;
+  int potential_unit_count;
+  int potential_pure_count;
+  int* potential_units;
+  int* potential_pures;
 }formula;
 #endif
 

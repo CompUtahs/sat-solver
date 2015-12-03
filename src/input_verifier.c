@@ -171,6 +171,10 @@ formula verify(int argc, char** argv, int* err)
   f->all_lits = all_lits;
   f->num_unsatisfied = num_statements;
   f->has_empty_clause = 0;
+  f->potential_units = NULL;
+  f->potential_pures = NULL;
+  f->potential_unit_count = num_statements;
+  f->potential_pure_count = num_actual_lits;
   return *f;
 }
 
@@ -266,4 +270,7 @@ void annhialate_formula(formula f)
     }
 
   free(f.clauses);
+
+  free(f.potential_units);
+  free(f.potential_pures);
 }

@@ -18,6 +18,13 @@
  **/
 int * concatenate_arrs(int* arr_a, int len_a, int* arr_b, int len_b)
 {
+  //printf("%d - %d  + %d - %d\n", arr_a, len_a, arr_b, len_b);
+  if(arr_a == NULL && len_a == 0)
+    return realloc(arr_b, sizeof(int) * len_b);
+
+  if(arr_b == NULL && len_b == 0)
+    return realloc(arr_a, sizeof(int) * len_a);
+
   int* new_arr = realloc(arr_a, sizeof(int) * len_a + sizeof(int) * len_b);
   memcpy(new_arr + len_a, arr_b, sizeof(int) * len_b);
   free(arr_b);
@@ -90,27 +97,6 @@ int is_satisfied(formula* f)
 }
 
 /**
- * Returns 1 if the clause is "empty"
- **/
-int is_empty_clause(clause c)
-{
-  return !c.is_satisfied && c.num_unassigned == 0;
-}
-
-/**
- * Returns 1 if the formula contains an "empty" clause
- **/
-int contains_empty_clause(formula* f)
-{
-  int i = 0;
-  for(; i < f->num_clauses; i++)    
-      if(is_empty_clause(f->clauses[i]))	
-	  return 1;
-
-  return 0;
-}
-
-/**
  * Returns 1 if the formula contains an "empty" clause
  **/
 int has_empty_clause(formula* f)
@@ -156,8 +142,14 @@ void guess(formula* f, int lit_index, int guess)
   // Immediately return if this value has already been guessed
   if(f->all_lits[lit_index].lit.is_assigned)
       return;
-
+  // printf("guessing %d (%d) as %d\n", lit_index, f->all_lits[lit_index].lit.id, guess);
+   //getchar();
   int i;
+  int max_unit_clauses = f->all_lits[lit_index].num_clauses;
+  int unit_count = 0;
+  int* unit_clauses = malloc(sizeof(int) * max_unit_clauses);
+  int pure_count = 0;
+  int* pure_lits = NULL;
   lit_clauses lc = f->all_lits[lit_index];
 
   // Loop through the literals in this literal's watch lit, assigning each one
@@ -166,7 +158,7 @@ void guess(formula* f, int lit_index, int guess)
       clause_index cl = lc.clauses[i];      
       
       // This literal should NOT yet be currently assigned yet
-      assert(!f->clauses[cl.clause].lits[cl.index].is_assigned);
+      //assert(!f->clauses[cl.clause].lits[cl.index].is_assigned);
       
       // Decrement the number of "unassigned" literals in the clause
       f->clauses[cl.clause].num_unassigned--;
@@ -178,19 +170,32 @@ void guess(formula* f, int lit_index, int guess)
       // In the case that this literal satisfies the clause
       if(f->clauses[cl.clause].lits[cl.index].eval)
 	{
-
+	  
 	  // If this clause hasn't been satisfied UNTIL NOW
 	  if(!f->clauses[cl.clause].is_satisfied)
 	    {
 	      // Decrement the number of "unsatisfied" clauses in the formula
 	      f->num_unsatisfied--;
 	      int lit_ind = 0;
+	      int cur_pure_count = 0;
+	      int cur_pure_max = f->clauses[cl.clause].len;
+	      int* cur_pures = NULL;
+	      cur_pures = malloc(sizeof(int) * cur_pure_max);
 	      for(; lit_ind < f->clauses[cl.clause].len; lit_ind++)
 		{
 		  int all_lits_ind = f->clauses[cl.clause].lits[lit_ind].index;
 		  f->all_lits[all_lits_ind].num_unsatisfied--;
 		  f->all_lits[all_lits_ind].purity -= f->clauses[cl.clause].lits[lit_ind].is_pos;
+		  if(lc.lit.id != f->clauses[cl.clause].lits[lit_ind].id && !f->clauses[cl.clause].lits[lit_ind].is_assigned && is_pure_literal(f->all_lits[all_lits_ind]))
+		    {
+		      cur_pures[cur_pure_count] = all_lits_ind;
+		      cur_pure_count++;
+		    }
 		}
+
+	      pure_lits = concatenate_arrs(pure_lits, pure_count, cur_pures, cur_pure_count);
+	      pure_count += cur_pure_count;
+
 	    }
 	  // Increment the is_satisfied counter/"boolean"
 	  f->clauses[cl.clause].is_satisfied++;
@@ -198,16 +203,37 @@ void guess(formula* f, int lit_index, int guess)
 	  // is_satisfied SHOULD be positive after the previous operation
 	  assert(f->clauses[cl.clause].is_satisfied > 0);
 	}
-      else // Guess DID NOT satisfy it.
+      else if(!f->clauses[cl.clause].is_satisfied) // Guess DID NOT satisfy it.
 	{
-	  if(f->clauses[cl.clause].num_unassigned == 0 &&
-	     !f->clauses[cl.clause].is_satisfied)
-	    f->has_empty_clause = 1;
+	  // If one literal remains, it is a UNIT CLAUSE
+	  if(is_unit_clause(f->clauses[cl.clause]))
+	    {
+	      unit_clauses[unit_count] = cl.clause;
+	      unit_count++;
+	    }
+	  if(f->clauses[cl.clause].num_unassigned == 0)
+	    {
+	      //printf("Guessing %d to be %d makes clause %d empty\n", f->clauses[cl.clause].lits[cl.index].id, guess, cl.clause);
+	      //print_clause(f->clauses[cl.clause]);
+	      f->has_empty_clause = 1;
+	    }
 	}
     }
 
   // Assign the value of the literal in the all_lits array
   f->all_lits[lit_index].lit.is_assigned = 1;
+
+  f->potential_pures = concatenate_arrs(f->potential_pures, f->potential_pure_count, pure_lits, pure_count);
+  f->potential_pure_count += pure_count;
+  /*
+  int z = 0;
+  for(; z < f->potential_pure_count; z++)
+    {
+      printf("pure #%d: %d (%d)\n", z, f->potential_pures[z], f->all_lits[f->potential_pures[z]].lit.id);
+    }
+  */
+  f->potential_units = concatenate_arrs(f->potential_units, f->potential_unit_count, unit_clauses, unit_count);
+  f->potential_unit_count += unit_count;
 }
 
 /**
@@ -282,13 +308,23 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
       int cur_unit_count = 0;
       /** Propogate the unit clauses **/
 
-      // Count unit clauses
-      for(i = 0; i < f->num_clauses; i++)	
-	if(!f->clauses[i].is_satisfied && is_unit_clause(f->clauses[i]))	
-	  cur_unit_count++;	    	
-      
       int* cur_unit_lits = NULL;
       clause_index* cur_unit_clauses = NULL;
+
+      // If potential_units has not been set, check ALL clauses
+      if(last_guess_clause_ind < 0 /*f->potential_units == NULL && f->potential_unit_count != 0*/)
+	{
+	  // Count unit clauses
+	  for(i = 0; i < f->num_clauses; i++)	
+	    if(!f->clauses[i].is_satisfied && is_unit_clause(f->clauses[i]))	
+	      cur_unit_count++;
+	  
+	  f->potential_unit_count = cur_unit_count;
+	}
+      else
+	{
+	  cur_unit_count = f->potential_unit_count;
+	}
   
       // If unit clauses were found, unit propogate them
       if(cur_unit_count)
@@ -299,15 +335,35 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
 
 	  // Determine the clause_index for each unit clause
 	  int clause_index_count = 0;
-	  for(i = 0; i < f->num_clauses; i++)
-	    if(!f->clauses[i].is_satisfied && is_unit_clause(f->clauses[i]))
-	      {
-		clause_index ci;
-		ci.clause = i;
-		ci.index = find_unit_lit(f->clauses[i]);
-		cur_unit_clauses[clause_index_count] = ci;
-		clause_index_count++;
-	      }	   	
+	  if(last_guess_clause_ind < 0 /*f->potential_units == NULL && f->potential_unit_count != 0*/)
+	    {
+	      for(i = 0; i < f->num_clauses; i++)
+		if(!f->clauses[i].is_satisfied && is_unit_clause(f->clauses[i]))
+		  {
+		    clause_index ci;
+		    ci.clause = i;
+		    ci.index = find_unit_lit(f->clauses[i]);
+		    cur_unit_clauses[clause_index_count] = ci;
+		    clause_index_count++;
+		  }	   	
+	    }
+	  else
+	    {
+	      for(i = 0; i < f->potential_unit_count; i++)
+		{
+		  clause_index ci;
+		  ci.clause = f->potential_units[i];
+		  //printf("%d: clause #%d of %d\n", i, f->potential_units[i], f->num_clauses);
+		  //print_clause(f->clauses[f->potential_units[i]]);
+		  ci.index = find_unit_lit(f->clauses[f->potential_units[i]]);
+		  cur_unit_clauses[clause_index_count] = ci;
+		  clause_index_count++;
+		} 
+	    }
+	  
+	  free(f->potential_units);
+	  f->potential_unit_count = 0;
+	  f->potential_units = NULL;
 	  
 	  // Assign the associated literal
 	  int l_index = 0;
@@ -323,7 +379,7 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
 		  break;
 		}
 	    }	  
-
+	  
 	  // Free this struct array, it's no longer needed
 	  if(cur_unit_clauses != NULL)
 	    free(cur_unit_clauses);
@@ -340,53 +396,99 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
 
       // Count pure literals
       int cur_pure_count = 0;
-      for(i = 0; i < f->num_lits; i++)	
-	if(!f->all_lits[i].lit.is_assigned &&
-	   is_pure_literal(f->all_lits[i]))
-	  cur_pure_count++;
-      
-      // If any pure literals were found
-      int* cur_pure_lits = NULL;
-      if(cur_pure_count)
+      if(!has_empty_clause(f))
 	{
-	  int pure_ind = 0;
-	  cur_pure_lits = malloc(sizeof(int)*cur_pure_count);
-	  
-	  // Fill cur_pure_lits with pure literals
-	  for(i = 0; i < f->num_lits; i++)	   
-	    if(!f->all_lits[i].lit.is_assigned && is_pure_literal(f->all_lits[i]))
-	      {
-		cur_pure_lits[pure_ind] = i;
-		pure_ind++;
-	      }
-	  
-	  // Propogate the pure literals
-	  for(i = 0; i < cur_pure_count; i++)
+	  if(last_guess_clause_ind < 0 /*f->potential_pures == NULL && f->potential_pure_count != 0*/)
 	    {
-	      int pure_val = is_pure_literal(f->all_lits[cur_pure_lits[i]]);
-	      
-	      if(pure_val > 0) // pure_val > 0 means set literal to 1
-		guess(f, cur_pure_lits[i], 1);
-	      else if (pure_val < 0) // pure_val < 0 means set literal to 0
-		guess(f, cur_pure_lits[i], 0);
-	      if(has_empty_clause(f))
-		{
-		  cur_pure_count = i + 1;
-		  break;
-		}
+	      for(i = 0; i < f->num_lits; i++)	
+		if(!f->all_lits[i].lit.is_assigned &&
+		   is_pure_literal(f->all_lits[i]))
+		  cur_pure_count++;
+
+	      f->potential_pure_count = cur_pure_count;
 	    }
+	  else
+	    {
+	      cur_pure_count = f->potential_pure_count;
+	    }
+
+	  // If any pure literals were found
+	  int* cur_pure_lits = NULL;
+	  if(cur_pure_count)
+	    {
+	      //printf("We've got %d pures\n", cur_pure_count);
+	      int pure_ind = 0;
+	      cur_pure_lits = malloc(sizeof(int)*cur_pure_count);
 	  
-	  // Use this current array as the base if no pure literals existed
-	  if(pure_lits == NULL)
-	    pure_lits = cur_pure_lits;
-      	  else // Otherwise, concatenate the existing and the current pures
-	    pure_lits = concatenate_arrs(cur_pure_lits,cur_pure_count, pure_lits,pure_count);	    
-	  pure_count += cur_pure_count;    
+	      // Fill cur_pure_lits with pure literals
+	      if(last_guess_clause_ind < 0 /*f->potential_pures == NULL && f->potential_pure_count != 0*/)
+		{
+		  for(i = 0; i < f->num_lits; i++)	   
+		    if(!f->all_lits[i].lit.is_assigned && is_pure_literal(f->all_lits[i]))
+		      {
+			cur_pure_lits[pure_ind] = i;
+			pure_ind++;
+		      }
+		}
+	      else
+		{
+		  for(i = 0; i < f->potential_pure_count; i++)	   
+		    {
+		      //printf("filling: %d (id: %d)\n", f->potential_pures[i], f->all_lits[f->potential_pures[i]].lit.id);
+		      //print_lit_watch(*f, f->potential_pures[i]);
+		      //if(!f->all_lits[f->potential_pures[i]].lit.is_assigned && is_pure_literal(f->all_lits[f->potential_pures[i]]))
+			{
+			  //printf("is it actually pure, or is it some hoe\n");
+			  cur_pure_lits[pure_ind] = f->potential_pures[i];
+			  pure_ind++;
+			}
+		    }
+		}
+	  
+	      free(f->potential_pures);
+	      f->potential_pures = NULL;
+	      f->potential_pure_count = 0;
+
+	      // Propogate the pure literals
+	      for(i = 0; i < cur_pure_count; i++)
+		{
+		  // printf("%d of %d\n", i, cur_pure_count);
+		  //printf("cur_pure_lits[%d] = %d and pure val: %d\n", i, cur_pure_lits[i], is_pure_literal(f->all_lits[cur_pure_lits[i]]));
+		  int pure_val = is_pure_literal(f->all_lits[cur_pure_lits[i]]);
+	      
+		  if(pure_val > 0) // pure_val > 0 means set literal to 1
+		    guess(f, cur_pure_lits[i], 1);
+		  else if (pure_val < 0) // pure_val < 0 means set literal to 0
+		    guess(f, cur_pure_lits[i], 0);
+		  if(has_empty_clause(f))
+		    {
+		      cur_pure_count = i + 1;
+		      break;
+		    }
+		}
+	  
+	      // Use this current array as the base if no pure literals existed
+	      if(pure_lits == NULL)
+		pure_lits = cur_pure_lits;
+	      else // Otherwise, concatenate the existing and the current pures
+		pure_lits = concatenate_arrs(cur_pure_lits,cur_pure_count, pure_lits,pure_count);	    
+	      pure_count += cur_pure_count;    
+	    }
 	}
       
       // Determine if at leas one clause/literal was eliminated
       at_least_one_reduced = cur_unit_count | cur_pure_count;
+      //printf("got %d units and %d pures\n", cur_unit_count, cur_pure_count);
+
     }
+  //printf("FINAL: got %d units and %d pures\n", unit_count, pure_count);
+
+  free(f->potential_pures);
+  f->potential_pures = NULL;
+  f->potential_pure_count = 0;
+  free(f->potential_units);
+  f->potential_units = NULL;
+  f->potential_unit_count = 0;
   
   // If the previous guesses brought us to a satisfied state, that's awesome!
   if(is_satisfied(f))
@@ -398,14 +500,21 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
       int found = 0;
       // pick next literal to guess as i
       int i;
-      for(i = 0/*last_guess_clause_ind*/; i < f->num_clauses; i++)
+      for(i = 0/*last_guess_clause_ind*/; i < f->num_lits; i++)
 	{
 	  // First literal that appears in an unsatisfied clause is chosen
 	  // VERY naive, but it works
-	  if(!f->clauses[i].is_satisfied && f->clauses[i].num_unassigned)
+	  /*if(!f->clauses[i].is_satisfied && f->clauses[i].num_unassigned)
 	    {	      
 	      found = 1;
 	      i = f->clauses[i].lits[find_unit_lit(f->clauses[i])].index;
+	      break;
+	    }
+	  */
+
+	  if(!f->all_lits[i].lit.is_assigned && f->all_lits[i].num_unsatisfied)
+	    {
+	      found = 1;
 	      break;
 	    }
 	}
@@ -428,6 +537,13 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
 	  // Undo guess, because it wasn't satisfiable
 	  undo_guess(f, i);
   
+	  free(f->potential_pures);
+	  f->potential_pures = NULL;
+	  f->potential_pure_count = 0;
+	  free(f->potential_units);
+	  f->potential_units = NULL;
+	  f->potential_unit_count = 0;
+
 	  // Guess false for the same lit, and check for satisfiability again
 	  guess(f, i, 0);
 
@@ -439,6 +555,12 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
 		free(unit_lits);  
 	      return 1;
 	    }
+	  free(f->potential_pures);
+	  f->potential_pures = NULL;
+	  f->potential_pure_count = 0;
+	  free(f->potential_units);
+	  f->potential_units = NULL;
+	  f->potential_unit_count = 0;
 
 	  // Undo guess, because we were wrong again!
 	  undo_guess(f, i);
@@ -461,7 +583,7 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
     free(pure_lits);
   if(unit_lits != NULL)
     free(unit_lits);  
-
+  //printf("going up\n");
   return 0;
 }
 
@@ -528,13 +650,13 @@ int main(int argc, char** argv)
   // Parse the formula and verify it is correct
   formula f = verify(argc, argv, &err);
   if(err)    
-      printf("ERROR");    
+      printf("ERROR\n");    
   else
     {
       // Fill the formula with indexes
       fill_formula(&f);
 
-      if(is_satisfiable(&f, 0))
+      if(is_satisfiable(&f, -1))
 	printf("SATISFIABLE\n");
       else
 	printf("UNSATISFIABLE\n");
