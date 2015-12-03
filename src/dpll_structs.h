@@ -1,20 +1,6 @@
 #ifndef DPLL_STRUCTS
 #define DPLL_STRUCTS
-/*
-typedef struct clause_node {
-  clause* clause;
-  clause_node* next;
-} clause_node;
 
-typedef struct clause_index_node {
-  clause_index* clause_index;
-  clause_node* next;
-} clause_index_node;
-
-typedef struct linked_list {
-
-} clause_index_list
-*/
 /**
  * lit_count allows literals to be tracked by frequency, for future sorting 
  **/
@@ -88,6 +74,7 @@ typedef struct formula{
   int num_lits;
   lit_clauses * all_lits;
   int num_unsatisfied;
+  int has_empty_clause;
 }formula;
 #endif
 

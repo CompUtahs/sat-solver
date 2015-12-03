@@ -111,6 +111,14 @@ int contains_empty_clause(formula* f)
 }
 
 /**
+ * Returns 1 if the formula contains an "empty" clause
+ **/
+int has_empty_clause(formula* f)
+{
+  return f->has_empty_clause;
+}
+
+/**
  * Returns 0 if the literal in question is not pure
  * Returns positive value if the literal is pure AND should be set to 1
  * Returns negative value if the literal is pure AND should be set to -1
@@ -190,6 +198,12 @@ void guess(formula* f, int lit_index, int guess)
 	  // is_satisfied SHOULD be positive after the previous operation
 	  assert(f->clauses[cl.clause].is_satisfied > 0);
 	}
+      else // Guess DID NOT satisfy it.
+	{
+	  if(f->clauses[cl.clause].num_unassigned == 0 &&
+	     !f->clauses[cl.clause].is_satisfied)
+	    f->has_empty_clause = 1;
+	}
     }
 
   // Assign the value of the literal in the all_lits array
@@ -253,7 +267,7 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
     return 1;
   
   // Return 0 if an empty clause is found
-  if(contains_empty_clause(f))
+  if(has_empty_clause(f))
     return 0;
   
   int at_least_one_reduced = 1;
@@ -303,7 +317,13 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
 	      literal cur_lit = f->clauses[cur_cl.clause].lits[cur_cl.index];
 	      cur_unit_lits[l_index] = cur_lit.index;
 	      guess(f, cur_lit.index, cur_lit.is_pos);	  	  	   
-	    }  
+	      if(has_empty_clause(f))
+		{
+		  cur_unit_count = l_index + 1;
+		  break;
+		}
+	    }	  
+
 	  // Free this struct array, it's no longer needed
 	  if(cur_unit_clauses != NULL)
 	    free(cur_unit_clauses);
@@ -349,6 +369,11 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
 		guess(f, cur_pure_lits[i], 1);
 	      else if (pure_val < 0) // pure_val < 0 means set literal to 0
 		guess(f, cur_pure_lits[i], 0);
+	      if(has_empty_clause(f))
+		{
+		  cur_pure_count = i + 1;
+		  break;
+		}
 	    }
 	  
 	  // Use this current array as the base if no pure literals existed
@@ -368,7 +393,7 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
     return 1;
 
   // Otherwise, check if an empty clause exists (because then we can backtrack)
-  if(!contains_empty_clause(f))
+  if(!has_empty_clause(f))
     {
       int found = 0;
       // pick next literal to guess as i
@@ -419,7 +444,7 @@ int is_satisfiable(formula * f, int last_guess_clause_ind)
 	  undo_guess(f, i);
 	}
     }
-
+  f->has_empty_clause = 0;
   // undo unit clauses and pure literals guesses
   int ind = 0;
   for(; ind < unit_count; ind++)

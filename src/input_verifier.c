@@ -29,6 +29,7 @@ formula verify(int argc, char** argv, int* err)
   char cnf[4];
   formula* f;
 
+  f = malloc(sizeof(formula));
   memset(curr_line, 0, sizeof(curr_line));
 
   if(argc != 2) 
@@ -43,8 +44,6 @@ formula verify(int argc, char** argv, int* err)
       *err = 1;
       return *f;
     }
-
-  f = malloc(sizeof(formula));
 
   while(fgets(curr_line, sizeof(curr_line), input)) 
     {
@@ -171,6 +170,7 @@ formula verify(int argc, char** argv, int* err)
   f->clauses = clauses;
   f->all_lits = all_lits;
   f->num_unsatisfied = num_statements;
+  f->has_empty_clause = 0;
   return *f;
 }
 
