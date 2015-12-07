@@ -15,8 +15,6 @@ int compare_lit_count (const void * a, const void * b)
 
 /**
  * Parse the supplied input file into a formula struct
- *
- * 
  **/
 formula verify(int argc, char** argv, int* err)
 {
@@ -74,7 +72,12 @@ formula verify(int argc, char** argv, int* err)
 	      *err = 1;
 	      return *f;
 	    }
-	}      
+	}   
+      else
+	{
+	  *err = 1;
+	  return *f;
+	}
     }
   // Use array 'possible_lits' to track frequency of appearance of literals
   lit_count possible_lits[num_params + 1];
@@ -175,6 +178,9 @@ formula verify(int argc, char** argv, int* err)
   f->potential_pures = NULL;
   f->potential_unit_count = num_statements;
   f->potential_pure_count = num_actual_lits;
+  f->guesses = NULL;
+  f->guess_arr = malloc(sizeof(int) * num_actual_lits);
+  f->guesses_made = 0;
   return *f;
 }
 
@@ -273,4 +279,5 @@ void annhialate_formula(formula f)
 
   free(f.potential_units);
   free(f.potential_pures);
+  free(f.guess_arr);
 }

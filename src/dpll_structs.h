@@ -2,6 +2,16 @@
 #define DPLL_STRUCTS
 
 /**
+ * Guess Node indicating the index of the guess in all_lits
+ * with next_guess being a pointer to the next guessed guess_node
+ **/
+typedef struct guess_node {
+  int lit_index;
+  struct guess_node* next_guess;
+} guess_node;
+
+
+/**
  * lit_count allows literals to be tracked by frequency, for future sorting 
  **/
 typedef struct lit_count {
@@ -69,6 +79,9 @@ typedef struct clause{
 }clause;
 
 typedef struct formula{
+  guess_node* guesses;
+  int* guess_arr;
+  int guesses_made;
   int num_clauses;
   clause *clauses;
   int num_lits;
