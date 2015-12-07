@@ -14,3 +14,4 @@ Testing:
 
 Testing involved running larger and larger randomly generated cnf files against minisat for correctness via the testing.py script. Also, we tested timing against minisat for some medium sized (e.g. 2300 literals and 2300 clauses) randomly generated cnf files. We also made a point of testing for larger files that were unsatisfiable. 
 Randomly generated files were made with the r_dimacs_gen executable, which takes in the number of desired litrerals, clauses, and finally the random seed.
+We also testing for improperly formatted cnf files with some included files in the test directory.
