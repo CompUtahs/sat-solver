@@ -1,24 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "dpll_structs.h"
+#include "dpll_structs3.h"
 #include <string.h>    
 
-clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err);
+clause3 parse_clause(char* line, int num_params, lit_count3* lits_seen, int* err);
 
 /**
  * lit_count comparer - to sort lit_counts in descending order
  **/
 int compare_lit_count (const void * a, const void * b)
 {
-  return ( (*(lit_count *) b).count - (*(lit_count *) a).count);
+  return ( (*(lit_count3 *) b).count - (*(lit_count3 *) a).count);
 }
 
 /**
  * Parse the supplied input file into a formula struct
- *
- * 
  **/
-formula verify(int argc, char** argv, int* err)
+formula3 verify(int argc, char** argv, int* err)
 {
   FILE* input;
   char curr_line[65536];
@@ -27,9 +25,9 @@ formula verify(int argc, char** argv, int* err)
   long statements_read = 0;
   char prob_start[2];
   char cnf[4];
-  formula* f;
+  formula3* f;
 
-  f = malloc(sizeof(formula));
+  f = malloc(sizeof(formula3));
   memset(curr_line, 0, sizeof(curr_line));
 
   if(argc != 2) 
@@ -74,16 +72,21 @@ formula verify(int argc, char** argv, int* err)
 	      *err = 1;
 	      return *f;
 	    }
-	}      
+	}   
+      else
+	{
+	  *err = 1;
+	  return *f;
+	}
     }
   // Use array 'possible_lits' to track frequency of appearance of literals
-  lit_count possible_lits[num_params + 1];
+  lit_count3 possible_lits[num_params + 1];
   memset(possible_lits, 0, sizeof(possible_lits));
-  lit_clauses possible_watches[num_params + 1];
+  lit_clauses3 possible_watches[num_params + 1];
   memset(possible_watches, 0, sizeof(possible_watches));
 
   // Secure memory for the array of clauses
-  clause* clauses = malloc(num_statements * sizeof(clause));
+  clause3* clauses = malloc(num_statements * sizeof(clause3));
 
   int erro = 0;
   int index = 0;
@@ -92,7 +95,7 @@ formula verify(int argc, char** argv, int* err)
     {
       if(curr_line[0] == 'c')
 	continue;
-      clause curr_clause = parse_clause(curr_line, num_params, possible_lits, &erro);
+      clause3 curr_clause = parse_clause(curr_line, num_params, possible_lits, &erro);
       if(erro)
 	{
 	  *err = erro;
@@ -114,13 +117,13 @@ formula verify(int argc, char** argv, int* err)
     }
 
   // Strip out literals that COULD have appeared in clauses, but did not.
-  lit_count lit_counts[num_actual_lits];
+  lit_count3 lit_counts[num_actual_lits];
   int curr_lit = 0;
   for(index = 0; index <= num_params ; index++) 
     {
       if(possible_lits[index].count)
 	{
-	  lit_count lc;
+	  lit_count3 lc;
 	  lc.id = index;
 	  lc.count = possible_lits[index].count;
 	  lit_counts[curr_lit] = lc;
@@ -129,17 +132,17 @@ formula verify(int argc, char** argv, int* err)
     }
 
   // Sort the literals from most frequent to least frequently seen, to optimize solution
-  qsort(lit_counts, num_actual_lits, sizeof(lit_count), compare_lit_count);
+  qsort(lit_counts, num_actual_lits, sizeof(lit_count3), compare_lit_count);
 
   // Convert the lit_counts to lit_clauses structs for the formula to use
-  lit_clauses* all_lits = malloc(num_actual_lits * sizeof(lit_clauses));
+  lit_clauses3* all_lits = malloc(num_actual_lits * sizeof(lit_clauses3));
   for(index = 0; index < num_actual_lits; index++)
     {
-      lit_clauses lc;
+      lit_clauses3 lc;
       lc.cur_clause = 0;
       lc.num_clauses = lit_counts[index].count;
-      lc.clauses = malloc(lc.num_clauses * sizeof(clause_index));
-      literal l;
+      lc.clauses = malloc(lc.num_clauses * sizeof(clause_index3));
+      literal3 l;
       l.id = lit_counts[index].id;
       l.is_assigned = 0;
       lc.lit = l;
@@ -171,6 +174,8 @@ formula verify(int argc, char** argv, int* err)
   f->all_lits = all_lits;
   f->num_unsatisfied = num_statements;
   f->has_empty_clause = 0;
+  f->guess_arr = malloc(sizeof(int) * num_actual_lits);
+  f->guesses_made = 0;
   return *f;
 }
 
@@ -178,9 +183,9 @@ formula verify(int argc, char** argv, int* err)
  * Parse the provided line into a clause struct
  * Also tracks occurences of literals in the clause
  **/
-clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
+clause3 parse_clause(char* line, int num_params, lit_count3* lits_seen, int* err)
 {
-  clause c;
+  clause3 c;
   int lit_index;
   int num_tokens = 0;
   int line_len = 0;
@@ -205,11 +210,11 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
       }
     }
 
-  literal* lits = malloc(sizeof(literal) * num_tokens);
+  literal3* lits = malloc(sizeof(literal) * num_tokens);
   char* token = strtok(line, " \t");
   for(lit_index = 0;lit_index < num_tokens; lit_index++)
     {            
-      literal lit;
+      literal3 lit;
       char* lastChar;
       // atoi can be used in this instance, because 0 should never be parsed
       int val = atoi(token);
@@ -249,7 +254,7 @@ clause parse_clause(char* line, int num_params, lit_count* lits_seen, int* err)
 }
 
 // Formula destructor
-void annhialate_formula(formula f)
+void annhialate_formula(formula3 f)
 {
   int lit_count = 0;
   for(; lit_count < f.num_lits; lit_count++)
@@ -266,4 +271,5 @@ void annhialate_formula(formula f)
     }
 
   free(f.clauses);
+  free(f.guess_arr);
 }

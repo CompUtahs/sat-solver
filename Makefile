@@ -1,4 +1,4 @@
-all: src/dpll_solver_v3.c src/input_verifier.c test/r_dimacs_gen.c
+all: src/dpll_solver_v3.c src/input_verifier3.c src/dpll_solver.c src/input_verifier.c test/r_dimacs_gen.c
 	gcc -O3 -o dpll_solver src/dpll_solver_v3.c
 	gcc -o r_dimacs_gen test/r_dimacs_gen.c
 

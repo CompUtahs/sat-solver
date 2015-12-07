@@ -1,0 +1,11 @@
+/*******************************************************
+ *************** SAT SOLVER DELUXE V3.0 ****************
+ *******************************************************/
+
+/* Team: Computahs */
+
+#include "dpll_structs.h"
+#include "input_verifier.c"
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
