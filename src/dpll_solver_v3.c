@@ -108,17 +108,8 @@ int next_unsat_lit3(formula3* f, int last_rand_guess)
 
 void add_guess3(formula3 *f, int lit_index)
 {
-/*
-  int x;
-  if(x = contains(f, lit_index))
-    {
-      printf("WHY DID WE GUESS %d AGAIN. At guess %d, previously at %d\n", f->all_lits[lit_index].lit.id, f->guesses_made, x);
-      getchar();
-    }
-*/
   f->guess_arr[f->guesses_made] = lit_index;
   f->guesses_made++;
-
 }
 
 int remove_guess3(formula3 *f)
@@ -226,32 +217,18 @@ guess_new_units_pures3(formula3 *f, int lit_index, int num_unsat)
   int i;
   lit_clauses3 lc = f->all_lits[lit_index];
   // Loop through all the lit's clauses that weren't satisfied by the last guess
-  //printf("checking units/pures for %d\n", f->all_lits[lit_index].lit.id);
-
   for(i = 0; i < lc.num_unsatisfied; i++)
     {
       clause_index3 ci= lc.clauses[i];
       clause3 cur_clause = f->clauses[ci.clause];
       literal3 cur_lit = cur_clause.lits[ci.index];
-      //printf("unit? ");print_clause(cur_clause);
 
       // if it's a unit clause...
       if(is_unit_clause3(cur_clause))
 	{
 	  literal3 lit = cur_clause.lits[0];
-	  //printf("       unit--> ");print_clause(cur_clause);
-	  //if(!f->all_lits[lit.index].lit.is_assigned)	    
-	    {
-	      if(!guess3(f, lit.index, lit.is_pos))	    
-		return;	    
-	    }
-	  /*
-	    else if(f->all_lits[lit.index].lit.val == lit.is_pos)
-	    {
-	    f->has_empty_clause = 1;
-	    return;
-	    }
-	  */
+	  if(!guess3(f, lit.index, lit.is_pos))	    
+	    return;	    
 	}
     }
   for(; i < num_unsat; i++)
@@ -261,21 +238,14 @@ guess_new_units_pures3(formula3 *f, int lit_index, int num_unsat)
       literal3 cur_lit = cur_clause.lits[ci.index];
       // loop through the UNASSIGNED literals in this clause
       int l_ind = 0;
-      //      for(l_ind = cur_clause.num_unassigned - 1; l_ind >= 0; l_ind--)
-      //printf("pure? ");print_clause(cur_clause);
 
       for(; l_ind < cur_clause.num_unassigned; l_ind++)
 	{
-
 	  int lit_i = cur_clause.lits[l_ind].index;
 	  lit_clauses3 l_c = f->all_lits[lit_i];
-	  if(is_pure_literal3(l_c))	
-	    {
-	      //printf("    pure--> ");print_clause(cur_clause);
-	  
-	      if(!guess3(f, lit_i, l_c.purity))
-		return;	
-	    }	
+	  if(is_pure_literal3(l_c))		  
+	    if(!guess3(f, lit_i, l_c.purity))
+	      return; 
 	}	    
 	
     }
@@ -286,7 +256,6 @@ int guess3(formula3 *f, int lit_index, int cur_guess)
   if( is_satisfied3(f) || f->has_empty_clause)
     return 1;
 
-  //printf("Guessing %d as %d\n", f->all_lits[lit_index].lit.id, cur_guess);
   add_guess3(f, lit_index);
   
   int num_unsat = f->all_lits[lit_index].num_unsatisfied;
@@ -299,7 +268,6 @@ int guess3(formula3 *f, int lit_index, int cur_guess)
     return 0;
   
   guess_new_units_pures3(f, lit_index, num_unsat);
-  //printf("FINISHING %d as %d\n", f->all_lits[lit_index].lit.id, cur_guess);
   if(has_empty_clause3(f))
     return 0;
   return 1;
@@ -308,7 +276,6 @@ int guess3(formula3 *f, int lit_index, int cur_guess)
 void undo_guess3(formula3 *f)
 {
   int lit_index = remove_guess3(f);
-  //printf("undoing %d\n", f->all_lits[lit_index].lit.id);
   int i;
   lit_clauses3 lc = f->all_lits[lit_index];
   int num_clauses = lc.num_clauses;
@@ -349,13 +316,9 @@ void undo_guess3(formula3 *f)
 	    }
 	}
       else
-	{
-	  // cur_clause->num_unassigned++;
-
-	  break;
-	}
+	break;
+	
       cur_clause->num_unassigned++;
-
     }  
 }
 
@@ -364,23 +327,15 @@ int strip_units_and_pures3(formula3 *f)
 {
   int i = 0;
   for(; i < f->num_clauses; i++)
-    {
-      if(is_unit_clause3(f->clauses[i]))
-	{
-	  literal3 lit = f->clauses[i].lits[find_unit_lit3(f->clauses[i])];
-	  // printf("stripping %d as unit\n", lit.id); 		
-	  guess3(f, lit.index, lit.is_pos);
-	}
-    }
+    if(is_unit_clause3(f->clauses[i]))
+      {
+	literal3 lit = f->clauses[i].lits[find_unit_lit3(f->clauses[i])];
+	guess3(f, lit.index, lit.is_pos);
+      }
 
   for(i = 0; i < f->num_lits; i++)
-    {
-      if(!f->all_lits[i].lit.is_assigned && is_pure_literal3(f->all_lits[i]))
-	{
-	  //printf("stripping %d as pure\n", f->all_lits[i].lit.id); 
-	  guess3(f, i, f->all_lits[i].purity);
-	}
-    }
+    if(!f->all_lits[i].lit.is_assigned && is_pure_literal3(f->all_lits[i]))
+      guess3(f, i, f->all_lits[i].purity);
 }
 
 int is_satisfiable3(formula3 *f, int last_rand_guess)
@@ -395,20 +350,15 @@ int is_satisfiable3(formula3 *f, int last_rand_guess)
   
   if(has_empty_clause3(f))
     return 0;
-  
-  //  int clause_ind = next_unsat_clause(f, last_rand_guess); 
-  //  int lit_ind = f->clauses[clause_ind].lits[0].index;
+
   int guess_lit = next_unsat_lit3(f, last_rand_guess);
   int first_guess = get_first_guess3(f, guess_lit);
   
-  //printf("random 1st guess: %d, %d\n", f->all_lits[guess_lit].lit.id, first_guess);
   if(guess3(f, guess_lit, first_guess))
     if(is_satisfiable3(f, guess_lit))
       return 1;
-  // printf("undoing %d\n", f->all_lits[guess_lit].lit.id);
   undo_to_guess3(f, guess_lit);
   
-  //printf("random 2nd guess: %d, %d\n", f->all_lits[guess_lit].lit.id, !first_guess);
   if(guess3(f, guess_lit, !first_guess))
     if(is_satisfiable3(f, guess_lit))
       return 1;
@@ -443,8 +393,7 @@ void fill_formula3(formula3* f)
 int main(int argc, char** argv)
 {
   timeout = 0;
-  timeout_time = time(0) + 150;
-  //out = fopen("output.out", "w");
+  timeout_time = time(0) + 180;
   int err3 = 0;
   // Parse the formula and verify it is correct
   formula3 f3 = verify3(argc, argv, &err3);
@@ -454,9 +403,7 @@ int main(int argc, char** argv)
     {
       // Fill the formula with indexes
       fill_formula3(&f3);
-      //fprintf(out, "stripping out pures and shit\n");
       strip_units_and_pures3(&f3);
-      //fprintf(out, "Finished stripping out pures and shit\n");
 
       int result = is_satisfiable3(&f3, 0);
       if(!timeout)
